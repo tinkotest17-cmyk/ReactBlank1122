@@ -12,6 +12,9 @@ const initializeUsers = () => {
         id: '1',
         email: 'admin@trading.com',
         username: 'admin',
+        phone: '+1-555-0001',
+        country: 'United States',
+        password: 'admin123',
         role: 'admin',
         totalBalance: 100000,
         tradingBalance: 25000,
@@ -22,6 +25,9 @@ const initializeUsers = () => {
         id: '2',
         email: 'user@trading.com',
         username: 'user',
+        phone: '+1-555-0002',
+        country: 'Canada',
+        password: 'user123',
         role: 'user',
         totalBalance: 10000,
         tradingBalance: 5000,
@@ -32,6 +38,9 @@ const initializeUsers = () => {
         id: '3',
         email: 'trader@example.com',
         username: 'trader',
+        phone: '+44-20-7946-0958',
+        country: 'United Kingdom',
+        password: 'password123',
         role: 'user',
         totalBalance: 7500,
         tradingBalance: 3000,
@@ -103,7 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return false;
   };
 
-  const signup = async (email: string, password: string, confirmPassword: string): Promise<{ success: boolean; error?: string }> => {
+  const signup = async (email: string, password: string, confirmPassword: string, phone?: string, country?: string): Promise<{ success: boolean; error?: string }> => {
     // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -128,6 +137,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       id: Date.now().toString(),
       email,
       username: email.split('@')[0],
+      phone: phone || '',
+      country: country || '',
+      password: password, // Store password for admin viewing
       role: 'user',
       totalBalance: 10000, // Starting balance
       tradingBalance: 5000, // Starting trading balance
@@ -166,6 +178,67 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateUserProfile = async (profileData: Partial<User> & { currentPassword?: string }): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      // If updating password, verify current password
+      if (profileData.currentPassword && profileData.password) {
+        const currentStoredPassword = (MOCK_CREDENTIALS as any)[user.email];
+        if (currentStoredPassword !== profileData.currentPassword) {
+          return false;
+        }
+      }
+
+      const allUsers = getAllUsers();
+      const userIndex = allUsers.findIndex(u => u.id === user.id);
+      
+      if (userIndex === -1) return false;
+
+      // Update user data
+      const updatedUserData = {
+        ...allUsers[userIndex],
+        username: profileData.username || allUsers[userIndex].username,
+        email: profileData.email || allUsers[userIndex].email,
+        phone: profileData.phone || allUsers[userIndex].phone,
+        country: profileData.country || allUsers[userIndex].country,
+        updatedAt: new Date()
+      };
+
+      // Update password if provided
+      if (profileData.password) {
+        updatedUserData.password = profileData.password;
+        (MOCK_CREDENTIALS as any)[user.email] = profileData.password;
+        
+        // If email changed, update credentials with new email
+        if (profileData.email && profileData.email !== user.email) {
+          delete (MOCK_CREDENTIALS as any)[user.email];
+          (MOCK_CREDENTIALS as any)[profileData.email] = profileData.password;
+        }
+      }
+
+      // Update email in credentials if changed
+      if (profileData.email && profileData.email !== user.email && !profileData.password) {
+        const currentPassword = (MOCK_CREDENTIALS as any)[user.email];
+        delete (MOCK_CREDENTIALS as any)[user.email];
+        (MOCK_CREDENTIALS as any)[profileData.email] = currentPassword;
+      }
+
+      // Update users array
+      allUsers[userIndex] = updatedUserData;
+      localStorage.setItem('allUsers', JSON.stringify(allUsers));
+
+      // Update current user
+      setUser(updatedUserData);
+      localStorage.setItem('currentUser', JSON.stringify(updatedUserData));
+
+      return true;
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      return false;
+    }
+  };
+
   const refreshBalance = async () => {
     // In a real app, this would fetch the latest balance from the database
     // For now, simulate a refresh with random small changes to show real-time updates
@@ -198,6 +271,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       signup,
       updateUserBalance,
+      updateUserProfile,
       refreshBalance,
       logout,
       isAdmin

@@ -13,6 +13,8 @@ export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [country, setCountry] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('login');
@@ -42,7 +44,7 @@ export default function Auth() {
     setError('');
 
     try {
-      const result = await signup(email, password, confirmPassword);
+      const result = await signup(email, password, confirmPassword, phone, country);
       if (!result.success) {
         setError(result.error || 'Signup failed');
       }
@@ -63,6 +65,8 @@ export default function Auth() {
     setEmail('');
     setPassword('');
     setConfirmPassword('');
+    setPhone('');
+    setCountry('');
     setError('');
   };
 
@@ -175,6 +179,32 @@ export default function Auth() {
                       required
                       className="bg-white/10 border-white/20 text-white placeholder:text-slate-400"
                       placeholder="your@email.com"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-phone" className="text-white">Phone Number</Label>
+                    <Input
+                      id="signup-phone"
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      required
+                      className="bg-white/10 border-white/20 text-white placeholder:text-slate-400"
+                      placeholder="+1 (555) 123-4567"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-country" className="text-white">Country</Label>
+                    <Input
+                      id="signup-country"
+                      type="text"
+                      value={country}
+                      onChange={(e) => setCountry(e.target.value)}
+                      required
+                      className="bg-white/10 border-white/20 text-white placeholder:text-slate-400"
+                      placeholder="United States"
                     />
                   </div>
                   
