@@ -10,7 +10,8 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
     allowedHosts: [
       "all",
-      "cbe10c9b-58eb-4f08-8f08-7a5b73302414-00-2vpamohlzrxwz.picard.replit.dev"
+      "cbe10c9b-58eb-4f08-8f08-7a5b73302414-00-2vpamohlzrxwz.picard.replit.dev",
+      "55e78793-d23b-4bfa-b440-1ebd629d03b7-00-38g1crmv9a7z9.picard.replit.dev"
     ],
     fs: {
       allow: ["./client", "./shared"],
