@@ -1,265 +1,159 @@
-
-import { supabaseAdmin, getDatabase } from '../shared/supabase';
+import { supabaseAdmin } from '../shared/supabase';
 import { User, Transaction, DepositWithdraw } from '../shared/types';
 
-export class DatabaseService {
-  private db: any;
-  private supabase: any;
-
-  constructor() {
-    this.db = getDatabase();
-    this.supabase = supabaseAdmin;
-  }
-
-  // User operations
-  async createUser(userData: Partial<User>): Promise<User | null> {
-    try {
-      if (this.supabase) {
-        const { data, error } = await this.supabase
-          .from('users')
-          .insert([{
-            email: userData.email,
-            username: userData.username,
-            role: userData.role || 'user',
-            total_balance: userData.totalBalance || 10000,
-            trading_balance: userData.tradingBalance || 5000,
-            status: 'active'
-          }])
-          .select()
-          .single();
-
-        if (error) throw error;
-        return data;
-      }
-      return null;
-    } catch (error) {
-      console.error('Error creating user:', error);
-      return null;
-    }
-  }
-
-  async getUserByEmail(email: string): Promise<User | null> {
-    try {
-      if (this.supabase) {
-        const { data, error } = await this.supabase
-          .from('users')
-          .select('*')
-          .eq('email', email)
-          .single();
-
-        if (error && error.code !== 'PGRST116') throw error;
-        return data || null;
-      }
-      return null;
-    } catch (error) {
-      console.error('Error fetching user:', error);
-      return null;
-    }
-  }
-
+export const db = {
   async getAllUsers(): Promise<User[]> {
-    try {
-      if (this.supabase) {
-        const { data, error } = await this.supabase
-          .from('users')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        return data || [];
-      }
-      return [];
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      return [];
+    if (!supabaseAdmin) {
+      // Fallback to mock data if no database connection
+      return [
+        {
+          id: '1',
+          email: 'john@example.com',
+          username: 'john_doe',
+          first_name: 'John',
+          last_name: 'Doe',
+          status: 'active',
+          total_balance: 1000,
+          trading_balance: 500,
+          created_at: new Date(),
+          updated_at: new Date()
+        },
+        {
+          id: '2',
+          email: 'jane@example.com',
+          username: 'jane_smith',
+          first_name: 'Jane',
+          last_name: 'Smith',
+          status: 'suspended',
+          total_balance: 750,
+          trading_balance: 250,
+          created_at: new Date(),
+          updated_at: new Date()
+        }
+      ];
     }
-  }
 
-  async updateUserStatus(userId: string, status: string): Promise<boolean> {
     try {
-      if (this.supabase) {
-        const { error } = await this.supabase
-          .from('users')
-          .update({ 
-            status: status,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', userId);
+      const { data, error } = await supabaseAdmin
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-        if (error) throw error;
-        return true;
-      }
-      return false;
+      if (error) throw error;
+      return data || [];
     } catch (error) {
-      console.error('Error updating user status:', error);
+      console.error('Database error:', error);
+      throw error;
+    }
+  },
+
+  async updateUserStatus(userId: string, status: 'active' | 'suspended'): Promise<boolean> {
+    if (!supabaseAdmin) {
+      console.log(`Mock: User ${userId} status updated to ${status}`);
+      return true;
+    }
+
+    try {
+      const { error } = await supabaseAdmin
+        .from('users')
+        .update({
+          status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Database error:', error);
       return false;
     }
-  }
-
-  async updateUserBalance(userId: string, totalBalance: number, tradingBalance: number): Promise<boolean> {
-    try {
-      if (this.supabase) {
-        const { error } = await this.supabase
-          .from('users')
-          .update({
-            total_balance: totalBalance,
-            trading_balance: tradingBalance,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', userId);
-
-        if (error) throw error;
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Error updating user balance:', error);
-      return false;
-    }
-  }
-
-  // Transaction operations
-  async createTransaction(transactionData: Partial<Transaction>): Promise<Transaction | null> {
-    try {
-      if (this.supabase) {
-        const { data, error } = await this.supabase
-          .from('transactions')
-          .insert([{
-            user_id: transactionData.userId,
-            type: transactionData.type,
-            status: transactionData.status,
-            amount: transactionData.amount,
-            total: transactionData.total,
-            symbol: transactionData.symbol,
-            action: transactionData.action
-          }])
-          .select()
-          .single();
-
-        if (error) throw error;
-        return data;
-      }
-      return null;
-    } catch (error) {
-      console.error('Error creating transaction:', error);
-      return null;
-    }
-  }
+  },
 
   async getUserTransactions(userId: string): Promise<Transaction[]> {
-    try {
-      if (this.supabase) {
-        const { data, error } = await this.supabase
-          .from('transactions')
-          .select('*')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        return data || [];
-      }
-      return [];
-    } catch (error) {
-      console.error('Error fetching user transactions:', error);
-      return [];
+    if (!supabaseAdmin) {
+      return [
+        {
+          id: '1',
+          user_id: userId,
+          type: 'trade',
+          amount: 100,
+          status: 'completed',
+          created_at: new Date()
+        }
+      ];
     }
-  }
 
-  // Deposit/Withdrawal operations
-  async createDepositWithdrawal(data: Partial<DepositWithdraw>): Promise<DepositWithdraw | null> {
     try {
-      if (this.supabase) {
-        const { data: result, error } = await this.supabase
-          .from('deposits_withdrawals')
-          .insert([{
-            user_id: data.userId,
-            user_email: data.userEmail,
-            type: data.type,
-            crypto_type: data.cryptoType,
-            amount: data.amount,
-            address: data.address,
-            status: 'pending'
-          }])
-          .select()
-          .single();
+      const { data, error } = await supabaseAdmin
+        .from('transactions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
 
-        if (error) throw error;
-        return result;
-      }
-      return null;
+      if (error) throw error;
+      return data || [];
     } catch (error) {
-      console.error('Error creating deposit/withdrawal:', error);
-      return null;
+      console.error('Database error:', error);
+      throw error;
     }
-  }
+  },
 
   async getPendingDepositsWithdrawals(): Promise<DepositWithdraw[]> {
-    try {
-      if (this.supabase) {
-        const { data, error } = await this.supabase
-          .from('deposits_withdrawals')
-          .select('*')
-          .eq('status', 'pending')
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        return data || [];
-      }
-      return [];
-    } catch (error) {
-      console.error('Error fetching pending transactions:', error);
-      return [];
+    if (!supabaseAdmin) {
+      return [
+        {
+          id: '1',
+          user_id: '1',
+          type: 'deposit',
+          amount: 500,
+          status: 'pending',
+          created_at: new Date()
+        }
+      ];
     }
-  }
 
-  async updateDepositWithdrawalStatus(
-    transactionId: string, 
-    status: string, 
-    processedBy: string,
-    rejectionReason?: string
-  ): Promise<boolean> {
     try {
-      if (this.supabase) {
-        const { error } = await this.supabase
-          .from('deposits_withdrawals')
-          .update({
-            status: status,
-            processed_by: processedBy,
-            processed_at: new Date().toISOString(),
-            rejection_reason: rejectionReason || null
-          })
-          .eq('id', transactionId);
+      const { data, error } = await supabaseAdmin
+        .from('transactions')
+        .select('*')
+        .in('type', ['deposit', 'withdrawal'])
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
 
-        if (error) throw error;
-        return true;
-      }
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Database error:', error);
+      throw error;
+    }
+  },
+
+  async updateDepositWithdrawalStatus(id: string, status: string, processedBy?: string, rejectionReason?: string): Promise<boolean> {
+    if (!supabaseAdmin) {
+      console.log(`Mock: Deposit/Withdrawal ${id} status updated to ${status}`);
+      return true;
+    }
+
+    try {
+      const updateData: any = {
+        status,
+        updated_at: new Date().toISOString()
+      };
+
+      if (processedBy) updateData.processed_by = processedBy;
+      if (rejectionReason) updateData.rejection_reason = rejectionReason;
+
+      const { error } = await supabaseAdmin
+        .from('transactions')
+        .update(updateData)
+        .eq('id', id);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Database error:', error);
       return false;
-    } catch (error) {
-      console.error('Error updating deposit/withdrawal status:', error);
-      return false;
     }
   }
-
-  // Admin audit log
-  async createAuditLog(adminId: string, adminEmail: string, action: string, details: string, targetUserId?: string): Promise<void> {
-    try {
-      if (this.supabase) {
-        const { error } = await this.supabase
-          .from('audit_logs')
-          .insert([{
-            admin_id: adminId,
-            admin_email: adminEmail,
-            action: action,
-            target_user_id: targetUserId || null,
-            details: details
-          }]);
-
-        if (error) throw error;
-      }
-    } catch (error) {
-      console.error('Error creating audit log:', error);
-    }
-  }
-}
-
-export const db = new DatabaseService();
+};

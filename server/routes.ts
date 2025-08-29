@@ -1,6 +1,5 @@
 
 import { type Express } from "express";
-import { createServer } from "http";
 import { db } from "./database";
 
 export function registerRoutes(app: Express) {
@@ -20,7 +19,31 @@ export function registerRoutes(app: Express) {
       const users = await db.getAllUsers();
       res.json(users);
     } catch (error) {
+      console.error('Error fetching users:', error);
       res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  // Suspend/activate user
+  app.patch("/api/users/:id/status", async (req, res) => {
+    try {
+      const { status } = req.body;
+      const userId = req.params.id;
+      
+      if (!['active', 'suspended'].includes(status)) {
+        return res.status(400).json({ error: "Invalid status. Must be 'active' or 'suspended'" });
+      }
+
+      const success = await db.updateUserStatus(userId, status);
+      
+      if (success) {
+        res.json({ success: true, message: `User ${status} successfully` });
+      } else {
+        res.status(404).json({ error: "User not found" });
+      }
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      res.status(500).json({ error: "Failed to update user status" });
     }
   });
 
@@ -30,6 +53,7 @@ export function registerRoutes(app: Express) {
       const transactions = await db.getUserTransactions(req.params.userId);
       res.json(transactions);
     } catch (error) {
+      console.error('Error fetching transactions:', error);
       res.status(500).json({ error: "Failed to fetch transactions" });
     }
   });
@@ -40,6 +64,7 @@ export function registerRoutes(app: Express) {
       const items = await db.getPendingDepositsWithdrawals();
       res.json(items);
     } catch (error) {
+      console.error('Error fetching deposits/withdrawals:', error);
       res.status(500).json({ error: "Failed to fetch deposits/withdrawals" });
     }
   });
@@ -60,6 +85,7 @@ export function registerRoutes(app: Express) {
         res.status(500).json({ error: "Failed to update status" });
       }
     } catch (error) {
+      console.error('Error updating deposit/withdrawal:', error);
       res.status(500).json({ error: "Failed to update deposit/withdrawal" });
     }
   });
