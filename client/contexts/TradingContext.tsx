@@ -248,7 +248,7 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
         const { data, error } = await supabase
           .from('transactions')
           .select('*')
-          .eq('userId', user.id);
+          .eq('user_id', user.id);
 
         if (error) {
           console.error('Error fetching transactions:', error);
@@ -264,9 +264,9 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
 
       const fetchUserActiveTrades = async () => {
         const { data, error } = await supabase
-          .from('activeTrades')
+          .from('active_trades')
           .select('*')
-          .eq('userId', user.id);
+          .eq('user_id', user.id);
 
         if (error) {
           console.error('Error fetching active trades:', error);
@@ -325,8 +325,8 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
     try {
       const { error } = await supabase
         .from('transactions')
-        .upsert(newTransactions.filter(t => t.userId === user.id))
-        .eq('userId', user.id);
+        .upsert(newTransactions.filter(t => t.user_id === user.id))
+        .eq('user_id', user.id);
 
       if (error) console.error('Error updating Supabase transactions:', error);
     } finally {
@@ -340,9 +340,9 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
     try {
       const { error } = await supabase
-        .from('activeTrades')
-        .upsert(newActiveTrades.filter(t => t.userId === user.id))
-        .eq('userId', user.id);
+        .from('active_trades')
+        .upsert(newActiveTrades.filter(t => t.user_id === user.id))
+        .eq('user_id', user.id);
 
       if (error) console.error('Error updating Supabase active trades:', error);
     } finally {
@@ -368,8 +368,8 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
     // Create transaction
     const transaction: Transaction = {
       id: Date.now().toString(),
-      userId: user.id,
-      pairId: pair.id,
+      user_id: user.id,
+      pair_id: pair.id,
       symbol: pair.symbol,
       type: 'trade',
       action,
@@ -407,8 +407,8 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
     // Create timed transaction
     const transaction: Transaction = {
       id: Date.now().toString(),
-      userId: user.id,
-      pairId: pair.id,
+      user_id: user.id,
+      pair_id: pair.id,
       symbol: pair.symbol,
       type: 'trade',
       action: prediction === 'up' ? 'buy' : 'sell',
@@ -500,11 +500,11 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
 
     const depositWithdraw: DepositWithdraw = {
       id: Date.now().toString(),
-      userId: user.id,
-      userEmail: user.email,
+      user_id: user.id,
+      user_email: user.email,
       type: 'deposit',
+      crypto_type: cryptoType,
       amount,
-      cryptoType,
       address,
       timestamp: new Date(),
       status: 'pending'
@@ -527,13 +527,13 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
     // Also store as a transaction for user history
     const transaction: Transaction = {
       id: depositWithdraw.id,
-      userId: user.id,
+      user_id: user.id,
       type: 'deposit',
       amount,
       total: amount,
       timestamp: new Date(),
       status: 'pending',
-      cryptoType,
+      crypto_type: cryptoType,
       address
     };
 
@@ -553,11 +553,11 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
 
     const depositWithdraw: DepositWithdraw = {
       id: Date.now().toString(),
-      userId: user.id,
-      userEmail: user.email,
+      user_id: user.id,
+      user_email: user.email,
       type: 'withdraw',
+      crypto_type: cryptoType,
       amount,
-      cryptoType,
       address,
       timestamp: new Date(),
       status: 'pending'
@@ -580,13 +580,13 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
     // Also store as a transaction for user history
     const transaction: Transaction = {
       id: depositWithdraw.id,
-      userId: user.id,
+      user_id: user.id,
       type: 'withdrawal',
       amount,
       total: amount,
       timestamp: new Date(),
       status: 'pending',
-      cryptoType,
+      crypto_type: cryptoType,
       address
     };
 
@@ -842,7 +842,7 @@ async function getAuditLogs(): Promise<any[]> {
 export const suspendUser = async (userId: string, adminId: string, adminEmail: string): Promise<boolean> => {
   try {
     console.log('🔄 Attempting to suspend user:', userId);
-    
+
     // Update user status in Supabase
     const { error } = await supabase
       .from('users')
@@ -869,7 +869,7 @@ export const suspendUser = async (userId: string, adminId: string, adminEmail: s
       details: `User ${userId} suspended by admin ${adminEmail}`,
       target_user_id: userId,
     };
-    
+
     await saveAuditLog(logEntry);
     console.log('✅ Audit log created');
 
@@ -906,7 +906,7 @@ export const suspendUser = async (userId: string, adminId: string, adminEmail: s
 export const activateUser = async (userId: string, adminId: string, adminEmail: string): Promise<boolean> => {
   try {
     console.log('🔄 Attempting to activate user:', userId);
-    
+
     // Update user status in Supabase
     const { error } = await supabase
       .from('users')
@@ -933,7 +933,7 @@ export const activateUser = async (userId: string, adminId: string, adminEmail: 
       details: `User ${userId} activated by admin ${adminEmail}`,
       target_user_id: userId,
     };
-    
+
     await saveAuditLog(logEntry);
     console.log('✅ Audit log created');
 

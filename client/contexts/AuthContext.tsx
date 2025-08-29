@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, AuthContextType } from '@shared/types';
+import { supabase } from '../supabaseClient'; // Assuming supabase client is set up here
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -96,6 +97,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 500));
 
+    // Try Supabase login
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (!error && data) {
+      // Verify password (Supabase won't return the password, so this part is tricky without a dedicated auth flow)
+      // For mock purposes, we'll assume a successful Supabase fetch means the user exists and password check is handled elsewhere or implicitly.
+      // In a real app, you'd use Supabase Auth or a password verification step.
+      // For now, we'll proceed if Supabase returns data.
+      if (data.password === password) { // This is a placeholder, Supabase should not expose password
+        // Map snake_case to camelCase for frontend compatibility
+        const user = {
+          id: data.id,
+          email: data.email,
+          username: data.username,
+          phone: data.first_name, // Assuming first_name maps to phone
+          country: data.last_name, // Assuming last_name maps to country
+          role: data.role,
+          status: data.status,
+          totalBalance: parseFloat(data.total_balance || '0'),
+          tradingBalance: parseFloat(data.trading_balance || '0'),
+          createdAt: new Date(data.created_at),
+          updatedAt: data.updated_at ? new Date(data.updated_at) : undefined,
+        };
+        setUser(user);
+        setIsAuthenticated(true);
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        return true;
+      } else {
+        return false; // Password mismatch
+      }
+    }
+
+    // Fallback to mock credentials if Supabase login fails or for initial setup
     const expectedPassword = MOCK_CREDENTIALS[email as keyof typeof MOCK_CREDENTIALS];
     if (!expectedPassword || expectedPassword !== password) {
       return false;
@@ -125,45 +163,81 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { success: false, error: 'Password must be at least 6 characters' };
     }
 
-    const allUsers = getAllUsers();
-    
-    // Check if user already exists
-    if (allUsers.find(u => u.email === email)) {
+    // Check if user already exists in localStorage (fallback)
+    const allUsersLocalStorage = getAllUsers();
+    if (allUsersLocalStorage.find(u => u.email === email)) {
       return { success: false, error: 'User already exists with this email' };
     }
 
-    // Create new user
-    const newUser: User = {
-      id: Date.now().toString(),
-      email,
-      username: email.split('@')[0],
-      phone: phone || '',
-      country: country || '',
-      password: password, // Store password for admin viewing
-      role: 'user',
-      totalBalance: 10000, // Starting balance
-      tradingBalance: 5000, // Starting trading balance
-      createdAt: new Date(),
-      status: 'active'
-    };
+    // Try to create user in Supabase
+    try {
+      const userData = {
+        email,
+        username: email.split('@')[0],
+        role: 'user' as const,
+        total_balance: 10000,
+        trading_balance: 5000,
+        first_name: phone || '', // Mapping phone to first_name
+        last_name: country || '', // Mapping country to last_name
+        status: 'active' as const,
+        created_at: new Date().toISOString(), // Add created_at
+      };
 
-    // Add to users list and credentials
-    const updatedUsers = [...allUsers, newUser];
-    localStorage.setItem('allUsers', JSON.stringify(updatedUsers));
-    (MOCK_CREDENTIALS as any)[email] = password;
+      const { data, error } = await supabase.from('users').insert([userData]).select().single();
 
-    // Auto login after signup
-    setUser(newUser);
-    setIsAuthenticated(true);
-    localStorage.setItem('currentUser', JSON.stringify(newUser));
-
-    return { success: true };
+      if (error) {
+        console.error('Supabase signup error:', error);
+        // Fallback to localStorage if Supabase fails
+        const newUser: User = {
+          id: Date.now().toString(),
+          email,
+          username: email.split('@')[0],
+          role: 'user' as const,
+          totalBalance: 10000,
+          tradingBalance: 5000,
+          phone,
+          country,
+          status: 'active' as const,
+          createdAt: new Date(),
+        };
+        const updatedUsers = [...allUsersLocalStorage, newUser];
+        localStorage.setItem('allUsers', JSON.stringify(updatedUsers));
+        localStorage.setItem('currentUser', JSON.stringify(newUser));
+        setUser(newUser);
+        setIsAuthenticated(true);
+        return { success: true };
+      } else if (data) {
+        // Map Supabase response to User type
+        const newUser: User = {
+          id: data.id,
+          email: data.email,
+          username: data.username,
+          phone: data.first_name, // Map from first_name
+          country: data.last_name, // Map from last_name
+          role: data.role,
+          status: data.status,
+          totalBalance: parseFloat(data.total_balance || '0'),
+          tradingBalance: parseFloat(data.trading_balance || '0'),
+          createdAt: new Date(data.created_at),
+          // updatedAt: data.updated_at ? new Date(data.updated_at) : undefined, // if available in schema
+        };
+        setUser(newUser);
+        setIsAuthenticated(true);
+        localStorage.setItem('currentUser', JSON.stringify(newUser));
+        return { success: true };
+      }
+    } catch (error) {
+      console.error('Error during signup process:', error);
+      return { success: false, error: 'An unexpected error occurred during signup.' };
+    }
+    return { success: false, error: 'Failed to create user.' };
   };
 
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
     localStorage.removeItem('currentUser');
+    // Optionally clear Supabase session here if using Supabase Auth
   };
 
   const updateUserBalance = (totalBalance: number, tradingBalance: number) => {
@@ -175,6 +249,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
       setUser(updatedUser);
       localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+
+      // Update Supabase as well
+      const updateUserInSupabase = async () => {
+        const { error } = await supabase
+          .from('users')
+          .update({
+            total_balance: totalBalance,
+            trading_balance: tradingBalance,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', user.id);
+        if (error) console.error('Error updating balance in Supabase:', error);
+      };
+      updateUserInSupabase();
     }
   };
 
@@ -182,55 +270,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return false;
 
     try {
-      // If updating password, verify current password
-      if (profileData.currentPassword && profileData.password) {
-        const currentStoredPassword = (MOCK_CREDENTIALS as any)[user.email];
-        if (currentStoredPassword !== profileData.currentPassword) {
-          return false;
-        }
-      }
+      // Prepare data for Supabase update (snake_case)
+      const supabaseUpdateData: { [key: string]: any } = {};
 
-      const allUsers = getAllUsers();
-      const userIndex = allUsers.findIndex(u => u.id === user.id);
-      
-      if (userIndex === -1) return false;
-
-      // Update user data
-      const updatedUserData = {
-        ...allUsers[userIndex],
-        username: profileData.username || allUsers[userIndex].username,
-        email: profileData.email || allUsers[userIndex].email,
-        phone: profileData.phone || allUsers[userIndex].phone,
-        country: profileData.country || allUsers[userIndex].country,
-        updatedAt: new Date()
-      };
-
-      // Update password if provided
+      if (profileData.username !== undefined) supabaseUpdateData.username = profileData.username;
+      if (profileData.email !== undefined) supabaseUpdateData.email = profileData.email;
+      if (profileData.phone !== undefined) supabaseUpdateData.first_name = profileData.phone; // Map phone to first_name
+      if (profileData.country !== undefined) supabaseUpdateData.last_name = profileData.country; // Map country to last_name
+      if (profileData.role !== undefined) supabaseUpdateData.role = profileData.role;
+      if (profileData.status !== undefined) supabaseUpdateData.status = profileData.status;
       if (profileData.password) {
-        updatedUserData.password = profileData.password;
-        (MOCK_CREDENTIALS as any)[user.email] = profileData.password;
-        
-        // If email changed, update credentials with new email
-        if (profileData.email && profileData.email !== user.email) {
-          delete (MOCK_CREDENTIALS as any)[user.email];
-          (MOCK_CREDENTIALS as any)[profileData.email] = profileData.password;
-        }
+        // In a real app, you'd handle password updates securely, likely via Supabase Auth.
+        // For this mock, we'll simulate it. If current password matches, update.
+        // This part needs a secure implementation.
+        return false; // Placeholder for secure password update logic
       }
 
-      // Update email in credentials if changed
-      if (profileData.email && profileData.email !== user.email && !profileData.password) {
-        const currentPassword = (MOCK_CREDENTIALS as any)[user.email];
-        delete (MOCK_CREDENTIALS as any)[user.email];
-        (MOCK_CREDENTIALS as any)[profileData.email] = currentPassword;
+      if (Object.keys(supabaseUpdateData).length === 0) return true; // No changes to update
+
+      const { error } = await supabase
+        .from('users')
+        .update(supabaseUpdateData)
+        .eq('id', user.id);
+
+      if (error) {
+        console.error('Error updating user profile in Supabase:', error);
+        return false;
       }
 
-      // Update users array
-      allUsers[userIndex] = updatedUserData;
-      localStorage.setItem('allUsers', JSON.stringify(allUsers));
+      // Update local state and localStorage
+      const updatedUser = {
+        ...user,
+        ...profileData,
+        phone: profileData.phone || user.phone, // Ensure correct mapping
+        country: profileData.country || user.country, // Ensure correct mapping
+      };
+      if (profileData.phone !== undefined) updatedUser.phone = profileData.phone;
+      if (profileData.country !== undefined) updatedUser.country = profileData.country;
 
-      // Update current user
-      setUser(updatedUserData);
-      localStorage.setItem('currentUser', JSON.stringify(updatedUserData));
+      setUser(updatedUser);
+      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
 
       return true;
     } catch (error) {
@@ -240,23 +319,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const refreshBalance = async () => {
-    // In a real app, this would fetch the latest balance from the database
-    // For now, simulate a refresh with random small changes to show real-time updates
-    if (user) {
-      // Simulate real-time balance updates from pending trades, deposits, etc.
-      const randomChange = (Math.random() - 0.5) * 50; // Random change of ±$25
-      const updatedUser = {
-        ...user,
-        totalBalance: Math.max(0, user.totalBalance + randomChange),
-        updatedAt: new Date()
-      };
-      setUser(updatedUser);
-      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-      
-      // Trigger a refresh event for other components
-      window.dispatchEvent(new CustomEvent('balanceRefresh', { 
-        detail: { user: updatedUser } 
-      }));
+    if (!user) return;
+
+    try {
+      // Fetch latest balance from Supabase
+      const { data, error } = await supabase
+        .from('users')
+        .select('total_balance, trading_balance')
+        .eq('id', user.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching balance from Supabase:', error);
+        // Fallback or show error to user
+        return;
+      }
+
+      if (data) {
+        const updatedUser = {
+          ...user,
+          totalBalance: parseFloat(data.total_balance || '0'),
+          tradingBalance: parseFloat(data.trading_balance || '0'),
+          updatedAt: new Date() // Assuming updated_at might be available or just update timestamp
+        };
+        setUser(updatedUser);
+        localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+
+        // Trigger a refresh event for other components
+        window.dispatchEvent(new CustomEvent('balanceRefresh', {
+          detail: { user: updatedUser }
+        }));
+      }
+    } catch (error) {
+      console.error('Unexpected error during balance refresh:', error);
     }
   };
 

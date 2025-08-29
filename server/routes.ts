@@ -1,4 +1,3 @@
-
 import { type Express } from "express";
 import { db } from "./database";
 
@@ -29,13 +28,13 @@ export function registerRoutes(app: Express) {
     try {
       const { status } = req.body;
       const userId = req.params.id;
-      
+
       if (!['active', 'suspended'].includes(status)) {
         return res.status(400).json({ error: "Invalid status. Must be 'active' or 'suspended'" });
       }
 
       const success = await db.updateUserStatus(userId, status);
-      
+
       if (success) {
         res.json({ success: true, message: `User ${status} successfully` });
       } else {
@@ -78,7 +77,7 @@ export function registerRoutes(app: Express) {
         processedBy,
         rejectionReason
       );
-      
+
       if (success) {
         res.json({ success: true });
       } else {
@@ -87,6 +86,45 @@ export function registerRoutes(app: Express) {
     } catch (error) {
       console.error('Error updating deposit/withdrawal:', error);
       res.status(500).json({ error: "Failed to update deposit/withdrawal" });
+    }
+  });
+
+  // Admin routes
+  app.get('/api/admin/users', async (req, res) => {
+    try {
+      const users = await db.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      res.status(500).json({ message: 'Failed to fetch users' });
+    }
+  });
+
+  app.post('/api/admin/users/:userId/status', async (req, res) => {
+    const { userId } = req.params;
+    const { status } = req.body;
+
+    try {
+      const success = await db.updateUserStatus(userId, status);
+      if (success) {
+        res.json({ success: true });
+      } else {
+        res.status(500).json({ message: 'Failed to update user status' });
+      }
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      res.status(500).json({ message: 'Failed to update user status' });
+    }
+  });
+
+  // Get pending deposits/withdrawals
+  app.get('/api/admin/pending-transactions', async (req, res) => {
+    try {
+      const transactions = await db.getPendingDepositsWithdrawals();
+      res.json(transactions);
+    } catch (error) {
+      console.error('Error fetching pending transactions:', error);
+      res.status(500).json({ message: 'Failed to fetch pending transactions' });
     }
   });
 }
