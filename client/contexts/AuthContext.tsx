@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, AuthContextType } from '@shared/types';
-import { supabase } from '../supabaseClient'; // Assuming supabase client is set up here
+import { supabase } from '@shared/supabase';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
