@@ -21,9 +21,11 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.56.0",
     "@types/memoizee": "^0.4.12",
     "@types/pg": "^8.15.5",
     "dotenv": "^17.2.1",
+    "drizzle-kit": "^0.31.4",
     "drizzle-orm": "^0.44.5",
     "drizzle-zod": "^0.8.3",
     "express": "^5.1.0",

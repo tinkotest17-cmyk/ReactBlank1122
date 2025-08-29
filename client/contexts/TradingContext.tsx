@@ -1,6 +1,18 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { TradingPair, Transaction, TradingContextType, User, DepositWithdraw } from '@shared/types';
 import { useAuth } from './AuthContext';
+import { createClient } from '@supabase/supabase-js';
+import { Database } from '@shared/types/supabase'; // Assuming you have types generated
+
+// Initialize Supabase client
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Supabase URL or Anon Key is missing. Make sure to set them in your .env file.');
+}
+
+const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
 
 const TradingContext = createContext<TradingContextType | undefined>(undefined);
 
@@ -207,7 +219,7 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [selectedPair, setSelectedPair] = useState<TradingPair | null>(null);
   const [activeTrades, setActiveTrades] = useState<Transaction[]>([]);
-  const { user, updateUserBalance } = useAuth();
+  const { user, updateUserBalance, fetchUserBalance } = useAuth();
 
   // Simulate price updates every 3 seconds
   useEffect(() => {
@@ -231,36 +243,114 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
   // Load transactions and active trades from localStorage
   useEffect(() => {
     if (user) {
-      const savedTransactions = localStorage.getItem(`transactions_${user.id}`);
-      if (savedTransactions) {
-        setTransactions(JSON.parse(savedTransactions));
-      }
+      // Fetch from Supabase instead of localStorage
+      const fetchUserTransactions = async () => {
+        const { data, error } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('userId', user.id);
 
-      const savedActiveTrades = localStorage.getItem(`activeTrades_${user.id}`);
-      if (savedActiveTrades) {
-        const trades = JSON.parse(savedActiveTrades);
-        setActiveTrades(trades);
-
-        // Restart timers for active trades
-        trades.forEach((trade: Transaction) => {
-          if (trade.tradeEndTime) {
-            const endTime = new Date(trade.tradeEndTime).getTime();
-            const now = Date.now();
-            const remaining = endTime - now;
-
-            if (remaining > 0) {
-              setTimeout(() => {
-                completeTimedTrade(trade.id);
-              }, remaining);
-            } else {
-              // Trade should have completed, complete it now
-              completeTimedTrade(trade.id);
-            }
+        if (error) {
+          console.error('Error fetching transactions:', error);
+          // Fallback to localStorage if Supabase fails or for testing without backend
+          const savedTransactions = localStorage.getItem(`transactions_${user.id}`);
+          if (savedTransactions) {
+            setTransactions(JSON.parse(savedTransactions));
           }
-        });
-      }
+        } else if (data) {
+          setTransactions(data as Transaction[]);
+        }
+      };
+
+      const fetchUserActiveTrades = async () => {
+        const { data, error } = await supabase
+          .from('activeTrades')
+          .select('*')
+          .eq('userId', user.id);
+
+        if (error) {
+          console.error('Error fetching active trades:', error);
+          // Fallback to localStorage
+          const savedActiveTrades = localStorage.getItem(`activeTrades_${user.id}`);
+          if (savedActiveTrades) {
+            const trades = JSON.parse(savedActiveTrades);
+            setActiveTrades(trades);
+            // Restart timers for active trades
+            trades.forEach((trade: Transaction) => {
+              if (trade.tradeEndTime) {
+                const endTime = new Date(trade.tradeEndTime).getTime();
+                const now = Date.now();
+                const remaining = endTime - now;
+
+                if (remaining > 0) {
+                  setTimeout(() => {
+                    completeTimedTrade(trade.id);
+                  }, remaining);
+                } else {
+                  completeTimedTrade(trade.id);
+                }
+              }
+            });
+          }
+        } else if (data) {
+          const trades = data as Transaction[];
+          setActiveTrades(trades);
+          // Restart timers for active trades
+          trades.forEach((trade: Transaction) => {
+            if (trade.tradeEndTime) {
+              const endTime = new Date(trade.tradeEndTime).getTime();
+              const now = Date.now();
+              const remaining = endTime - now;
+
+              if (remaining > 0) {
+                setTimeout(() => {
+                  completeTimedTrade(trade.id);
+                }, remaining);
+              } else {
+                completeTimedTrade(trade.id);
+              }
+            }
+          });
+        }
+      };
+
+      fetchUserTransactions();
+      fetchUserActiveTrades();
     }
   }, [user]);
+
+  // Function to update Supabase transactions and localStorage
+  const updateSupabaseTransactions = async (newTransactions: Transaction[]) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .upsert(newTransactions.filter(t => t.userId === user.id))
+        .eq('userId', user.id);
+
+      if (error) console.error('Error updating Supabase transactions:', error);
+    } finally {
+      // Always update localStorage as a fallback or for offline support
+      localStorage.setItem(`transactions_${user.id}`, JSON.stringify(newTransactions));
+    }
+  };
+
+  // Function to update Supabase active trades and localStorage
+  const updateSupabaseActiveTrades = async (newActiveTrades: Transaction[]) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('activeTrades')
+        .upsert(newActiveTrades.filter(t => t.userId === user.id))
+        .eq('userId', user.id);
+
+      if (error) console.error('Error updating Supabase active trades:', error);
+    } finally {
+      // Always update localStorage as a fallback or for offline support
+      localStorage.setItem(`activeTrades_${user.id}`, JSON.stringify(newActiveTrades));
+    }
+  };
+
 
   const executeTrade = async (pairId: string, action: 'buy' | 'sell', amount: number): Promise<boolean> => {
     if (!user) return false;
@@ -292,9 +382,8 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
 
     const updatedTransactions = [...transactions, transaction];
     setTransactions(updatedTransactions);
+    updateSupabaseTransactions(updatedTransactions);
 
-    // Save to localStorage
-    localStorage.setItem(`transactions_${user.id}`, JSON.stringify(updatedTransactions));
 
     // Update user balance through AuthContext
     updateUserBalance(user.totalBalance, user.tradingBalance - total);
@@ -341,7 +430,7 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
     // Add to active trades
     const updatedActiveTrades = [...activeTrades, transaction];
     setActiveTrades(updatedActiveTrades);
-    localStorage.setItem(`activeTrades_${user.id}`, JSON.stringify(updatedActiveTrades));
+    updateSupabaseActiveTrades(updatedActiveTrades);
 
     // Set timer for trade completion
     setTimeout(() => {
@@ -351,7 +440,7 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
     return true;
   };
 
-  const completeTimedTrade = (tradeId: string) => {
+  const completeTimedTrade = async (tradeId: string) => {
     const trade = activeTrades.find(t => t.id === tradeId);
     if (!trade || !user) return;
 
@@ -377,11 +466,11 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
     // Move from active trades to completed transactions
     const updatedActiveTrades = activeTrades.filter(t => t.id !== tradeId);
     setActiveTrades(updatedActiveTrades);
-    localStorage.setItem(`activeTrades_${user.id}`, JSON.stringify(updatedActiveTrades));
+    updateSupabaseActiveTrades(updatedActiveTrades);
 
     const updatedTransactions = [...transactions, completedTrade];
     setTransactions(updatedTransactions);
-    localStorage.setItem(`transactions_${user.id}`, JSON.stringify(updatedTransactions));
+    updateSupabaseTransactions(updatedTransactions);
   };
 
   const convertBalance = async (amount: number, from: 'total' | 'trading', to: 'total' | 'trading'): Promise<boolean> => {
@@ -402,6 +491,7 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
       : user.tradingBalance + amount;
 
     updateUserBalance(newTotalBalance, newTradingBalance);
+    // TODO: Add Supabase integration for balance updates
     return true;
   };
 
@@ -420,11 +510,19 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
       status: 'pending'
     };
 
-    // Store in deposits/withdrawals for admin access
-    const existingDepositsWithdrawals = localStorage.getItem('depositsWithdrawals');
-    const depositsWithdrawals = existingDepositsWithdrawals ? JSON.parse(existingDepositsWithdrawals) : [];
-    depositsWithdrawals.push(depositWithdraw);
-    localStorage.setItem('depositsWithdrawals', JSON.stringify(depositsWithdrawals));
+    // Store in Supabase deposits/withdrawals for admin access
+    try {
+      const { error } = await supabase.from('deposits_withdrawals').insert([depositWithdraw]);
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error creating deposit in Supabase:', error);
+      // Fallback to localStorage
+      const existingDepositsWithdrawals = localStorage.getItem('depositsWithdrawals');
+      const depositsWithdrawals = existingDepositsWithdrawals ? JSON.parse(existingDepositsWithdrawals) : [];
+      depositsWithdrawals.push(depositWithdraw);
+      localStorage.setItem('depositsWithdrawals', JSON.stringify(depositsWithdrawals));
+    }
+
 
     // Also store as a transaction for user history
     const transaction: Transaction = {
@@ -441,7 +539,7 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
 
     const updatedTransactions = [...transactions, transaction];
     setTransactions(updatedTransactions);
-    localStorage.setItem(`transactions_${user.id}`, JSON.stringify(updatedTransactions));
+    updateSupabaseTransactions(updatedTransactions);
 
     return true;
   };
@@ -465,11 +563,19 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
       status: 'pending'
     };
 
-    // Store in deposits/withdrawals for admin access
-    const existingDepositsWithdrawals = localStorage.getItem('depositsWithdrawals');
-    const depositsWithdrawals = existingDepositsWithdrawals ? JSON.parse(existingDepositsWithdrawals) : [];
-    depositsWithdrawals.push(depositWithdraw);
-    localStorage.setItem('depositsWithdrawals', JSON.stringify(depositsWithdrawals));
+    // Store in Supabase deposits/withdrawals for admin access
+    try {
+      const { error } = await supabase.from('deposits_withdrawals').insert([depositWithdraw]);
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error creating withdrawal in Supabase:', error);
+      // Fallback to localStorage
+      const existingDepositsWithdrawals = localStorage.getItem('depositsWithdrawals');
+      const depositsWithdrawals = existingDepositsWithdrawals ? JSON.parse(existingDepositsWithdrawals) : [];
+      depositsWithdrawals.push(depositWithdraw);
+      localStorage.setItem('depositsWithdrawals', JSON.stringify(depositsWithdrawals));
+    }
+
 
     // Also store as a transaction for user history
     const transaction: Transaction = {
@@ -486,7 +592,7 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
 
     const updatedTransactions = [...transactions, transaction];
     setTransactions(updatedTransactions);
-    localStorage.setItem(`transactions_${user.id}`, JSON.stringify(updatedTransactions));
+    updateSupabaseTransactions(updatedTransactions);
 
     return true;
   };
@@ -503,8 +609,41 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
     setPairs(updatedPairs);
 
     // Trigger balance refresh in AuthContext
+    fetchUserBalance(); // Ensure user balance is up-to-date
     window.dispatchEvent(new CustomEvent('refreshBalance'));
   };
+
+  // Helper to get audit logs from Supabase or localStorage
+  const getAuditLogs = async (): Promise<any[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('auditLogs')
+        .select('*')
+        .order('timestamp', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching audit logs from Supabase:', error);
+      // Fallback to localStorage
+      const logs = localStorage.getItem('adminLogs');
+      return logs ? JSON.parse(logs) : [];
+    }
+  };
+
+  // Helper to save audit logs to Supabase or localStorage
+  const saveAuditLog = async (logEntry: any) => {
+    try {
+      const { error } = await supabase.from('auditLogs').insert([logEntry]);
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error saving audit log to Supabase:', error);
+      // Fallback to localStorage
+      const logs = localStorage.getItem('adminLogs') ? JSON.parse(localStorage.getItem('adminLogs')!) : [];
+      logs.push(logEntry);
+      localStorage.setItem('adminLogs', JSON.stringify(logs));
+    }
+  };
+
 
   return (
     <TradingContext.Provider value={{
@@ -525,214 +664,354 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
 }
 
 // Admin functions - exported separately for admin use
-export function getAllUsers(): User[] {
-  const usersData = localStorage.getItem('allUsers');
-  if (!usersData) {
-    return [];
-  }
-  return JSON.parse(usersData);
-}
 
-export function getAllTransactions(): Transaction[] {
-  const users = getAllUsers();
-  const allTransactions: Transaction[] = [];
-  
-  users.forEach(user => {
-    const userTransactions = localStorage.getItem(`transactions_${user.id}`);
-    if (userTransactions) {
-      allTransactions.push(...JSON.parse(userTransactions));
-    }
-  });
-  
-  return allTransactions;
-}
-
-export function getAllDepositsWithdrawals(): DepositWithdraw[] {
-  const depositsWithdrawals = localStorage.getItem('depositsWithdrawals');
-  if (!depositsWithdrawals) {
-    return [];
-  }
-  return JSON.parse(depositsWithdrawals);
-}
-
-export function approveDepositWithdrawal(transactionId: string, adminId: string, adminEmail: string): boolean {
+// Fetch all users from Supabase
+export async function getAllUsers(): Promise<User[]> {
   try {
-    const depositsWithdrawals = getAllDepositsWithdrawals();
-    const transactionIndex = depositsWithdrawals.findIndex(t => t.id === transactionId);
-    
-    if (transactionIndex === -1) return false;
-    
-    const transaction = depositsWithdrawals[transactionIndex];
-    transaction.status = 'approved';
-    transaction.processedBy = adminEmail;
-    transaction.processedAt = new Date();
-    
-    // Update the transaction in storage
-    localStorage.setItem('depositsWithdrawals', JSON.stringify(depositsWithdrawals));
-    
-    // Handle balance updates
-    const users = getAllUsers();
-    const userIndex = users.findIndex(u => u.id === transaction.userId);
-    if (userIndex !== -1) {
-      if (transaction.type === 'deposit') {
-        // Add to user's balance for deposits
-        users[userIndex].totalBalance += transaction.amount;
-      } else if (transaction.type === 'withdraw') {
-        // Deduct from user's balance for withdrawals
-        users[userIndex].totalBalance = Math.max(0, users[userIndex].totalBalance - transaction.amount);
+    const { data, error } = await supabase.from('users').select('*');
+    if (error) throw error;
+    return data as User[];
+  } catch (error) {
+    console.error('Error fetching all users:', error);
+    // Fallback to localStorage for testing or if Supabase is unavailable
+    const usersData = localStorage.getItem('allUsers');
+    return usersData ? JSON.parse(usersData) : [];
+  }
+}
+
+// Fetch all transactions from Supabase
+export async function getAllTransactions(): Promise<Transaction[]> {
+  try {
+    const { data, error } = await supabase.from('transactions').select('*');
+    if (error) throw error;
+    return data as Transaction[];
+  } catch (error) {
+    console.error('Error fetching all transactions:', error);
+    // Fallback to localStorage
+    const users = await getAllUsers(); // Get users to iterate through their transaction keys
+    const allTransactions: Transaction[] = [];
+    users.forEach(user => {
+      const userTransactions = localStorage.getItem(`transactions_${user.id}`);
+      if (userTransactions) {
+        allTransactions.push(...JSON.parse(userTransactions));
       }
-      
-      localStorage.setItem('allUsers', JSON.stringify(users));
-      
-      // Update current user if it's the same user
-      const currentUserData = localStorage.getItem('currentUser');
-      if (currentUserData) {
-        const currentUser = JSON.parse(currentUserData);
-        if (currentUser.id === transaction.userId) {
-          if (transaction.type === 'deposit') {
-            currentUser.totalBalance += transaction.amount;
-          } else if (transaction.type === 'withdraw') {
-            currentUser.totalBalance = Math.max(0, currentUser.totalBalance - transaction.amount);
-          }
-          localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        }
-      }
+    });
+    return allTransactions;
+  }
+}
+
+// Fetch all deposits/withdrawals from Supabase
+export async function getAllDepositsWithdrawals(): Promise<DepositWithdraw[]> {
+  try {
+    const { data, error } = await supabase.from('deposits_withdrawals').select('*');
+    if (error) throw error;
+    return data as DepositWithdraw[];
+  } catch (error) {
+    console.error('Error fetching all deposits/withdrawals:', error);
+    // Fallback to localStorage
+    const depositsWithdrawals = localStorage.getItem('depositsWithdrawals');
+    return depositsWithdrawals ? JSON.parse(depositsWithdrawals) : [];
+  }
+}
+
+export const approveDepositWithdrawal = async (transactionId: string, adminId: string, adminEmail: string): Promise<boolean> => {
+  try {
+    // Fetch the transaction from Supabase
+    const { data: transaction, error: fetchError } = await supabase
+      .from('deposits_withdrawals')
+      .select('*')
+      .eq('id', transactionId)
+      .single();
+
+    if (fetchError || !transaction) {
+      console.error('Error fetching transaction for approval:', fetchError);
+      return false;
     }
-    
+
+    // Update transaction status and admin details
+    const { error: updateError } = await supabase
+      .from('deposits_withdrawals')
+      .update({
+        status: 'approved',
+        processedBy: adminEmail,
+        processedAt: new Date().toISOString(),
+      })
+      .eq('id', transactionId);
+
+    if (updateError) throw updateError;
+
+    // Handle balance updates in Supabase
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id, totalBalance, tradingBalance')
+      .eq('id', transaction.userId)
+      .single();
+
+    if (userError || !user) {
+      console.error('Error fetching user for balance update:', userError);
+      return false;
+    }
+
+    let newTotalBalance = user.totalBalance;
+    if (transaction.type === 'deposit') {
+      newTotalBalance += transaction.amount;
+    } else if (transaction.type === 'withdraw') {
+      newTotalBalance = Math.max(0, user.totalBalance - transaction.amount);
+    }
+
+    const { error: balanceUpdateError } = await supabase
+      .from('users')
+      .update({ totalBalance: newTotalBalance })
+      .eq('id', transaction.userId);
+
+    if (balanceUpdateError) throw balanceUpdateError;
+
+    // Log the admin action
+    const logEntry = {
+      id: Date.now().toString(),
+      timestamp: new Date().toISOString(),
+      action: 'Deposit/Withdrawal Approved',
+      adminId,
+      adminEmail,
+      details: `Transaction ${transactionId} (${transaction.type}) approved for user ${transaction.userId}`,
+      targetUserId: transaction.userId,
+      transactionId: transactionId,
+    };
+    await saveAuditLog(logEntry);
+
+    // Dispatch event for UI updates if needed (e.g., refresh user profile)
+    window.dispatchEvent(new CustomEvent('balanceUpdated', { detail: { userId: transaction.userId, newBalance: newTotalBalance } }));
+
     return true;
   } catch (error) {
     console.error('Error approving transaction:', error);
     return false;
   }
-}
+};
 
-export function rejectDepositWithdrawal(transactionId: string, adminId: string, adminEmail: string, reason: string): boolean {
+export const rejectDepositWithdrawal = async (transactionId: string, adminId: string, adminEmail: string, reason: string): Promise<boolean> => {
   try {
-    const depositsWithdrawals = getAllDepositsWithdrawals();
-    const transactionIndex = depositsWithdrawals.findIndex(t => t.id === transactionId);
-    
-    if (transactionIndex === -1) return false;
-    
-    const transaction = depositsWithdrawals[transactionIndex];
-    transaction.status = 'rejected';
-    transaction.processedBy = adminEmail;
-    transaction.processedAt = new Date();
-    transaction.rejectionReason = reason;
-    
-    // Update the transaction in storage
-    localStorage.setItem('depositsWithdrawals', JSON.stringify(depositsWithdrawals));
-    
+    const { error } = await supabase
+      .from('deposits_withdrawals')
+      .update({
+        status: 'rejected',
+        processedBy: adminEmail,
+        processedAt: new Date().toISOString(),
+        rejectionReason: reason,
+      })
+      .eq('id', transactionId);
+
+    if (error) throw error;
+
+    // Log the admin action
+    const logEntry = {
+      id: Date.now().toString(),
+      timestamp: new Date().toISOString(),
+      action: 'Deposit/Withdrawal Rejected',
+      adminId,
+      adminEmail,
+      details: `Transaction ${transactionId} rejected for user with reason: ${reason}`,
+      targetUserId: await (async () => {
+        const { data: transaction } = await supabase.from('deposits_withdrawals').select('userId').eq('id', transactionId).single();
+        return transaction?.userId;
+      })(),
+      transactionId: transactionId,
+    };
+    await saveAuditLog(logEntry);
+
     return true;
   } catch (error) {
     console.error('Error rejecting transaction:', error);
     return false;
   }
+};
+
+// Helper function to get audit logs (used by suspend/activateUser)
+async function getAuditLogs(): Promise<any[]> {
+  try {
+    const { data, error } = await supabase.from('auditLogs').select('*').order('timestamp', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching audit logs:', error);
+    const logs = localStorage.getItem('adminLogs');
+    return logs ? JSON.parse(logs) : [];
+  }
 }
 
-export function suspendUser(userId: string, adminId: string, adminEmail: string): boolean {
+export const suspendUser = async (userId: string, adminId: string, adminEmail: string): Promise<boolean> => {
   try {
-    const users = getAllUsers();
+    const users = await getAllUsers(); // Fetch users from Supabase
     const userIndex = users.findIndex(u => u.id === userId);
-    
-    if (userIndex === -1) return false;
-    
-    users[userIndex].status = 'suspended';
-    localStorage.setItem('allUsers', JSON.stringify(users));
-    
-    // Update current user if it's the same user
-    const currentUserData = localStorage.getItem('currentUser');
-    if (currentUserData) {
-      const currentUser = JSON.parse(currentUserData);
-      if (currentUser.id === userId) {
-        currentUser.status = 'suspended';
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+    if (userIndex === -1) {
+      console.error('User not found for suspension.');
+      return false;
+    }
+
+    // Update user status in Supabase
+    const { error } = await supabase
+      .from('users')
+      .update({
+        status: 'suspended',
+        updatedAt: new Date().toISOString(),
+      })
+      .eq('id', userId);
+
+    if (error) throw error;
+
+    // Log the action
+    const logEntry = {
+      id: Date.now().toString(),
+      timestamp: new Date().toISOString(),
+      action: 'User suspended',
+      adminId,
+      adminEmail,
+      details: `User ${users[userIndex].email} suspended by admin`,
+      targetUserId: userId,
+    };
+    await saveAuditLog(logEntry); // Save log using the helper
+
+    // Update current user if they're the one being suspended
+    const currentUser = localStorage.getItem('currentUser');
+    if (currentUser) {
+      const userData = JSON.parse(currentUser);
+      if (userData.id === userId) {
+        const updatedUserData = {
+          ...userData,
+          status: 'suspended',
+          updatedAt: new Date().toISOString(),
+        };
+        localStorage.setItem('currentUser', JSON.stringify(updatedUserData));
+
+        // Trigger a refresh event for other components
+        window.dispatchEvent(new CustomEvent('userStatusChanged', {
+          detail: { user: updatedUserData, action: 'suspended' }
+        }));
       }
     }
-    
+
+    // Trigger a refresh event for admin panel
+    window.dispatchEvent(new CustomEvent('refreshAdminData'));
+
     return true;
   } catch (error) {
     console.error('Error suspending user:', error);
     return false;
   }
-}
+};
 
-export function activateUser(userId: string, adminId: string, adminEmail: string): boolean {
+export const activateUser = async (userId: string, adminId: string, adminEmail: string): Promise<boolean> => {
   try {
-    const users = getAllUsers();
+    const users = await getAllUsers(); // Fetch users from Supabase
     const userIndex = users.findIndex(u => u.id === userId);
-    
-    if (userIndex === -1) return false;
-    
-    users[userIndex].status = 'active';
-    localStorage.setItem('allUsers', JSON.stringify(users));
-    
-    // Update current user if it's the same user
-    const currentUserData = localStorage.getItem('currentUser');
-    if (currentUserData) {
-      const currentUser = JSON.parse(currentUserData);
-      if (currentUser.id === userId) {
-        currentUser.status = 'active';
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+    if (userIndex === -1) {
+      console.error('User not found for activation.');
+      return false;
+    }
+
+    // Update user status in Supabase
+    const { error } = await supabase
+      .from('users')
+      .update({
+        status: 'active',
+        updatedAt: new Date().toISOString(),
+      })
+      .eq('id', userId);
+
+    if (error) throw error;
+
+    // Log the action
+    const logEntry = {
+      id: Date.now().toString(),
+      timestamp: new Date().toISOString(),
+      action: 'User activated',
+      adminId,
+      adminEmail,
+      details: `User ${users[userIndex].email} activated by admin`,
+      targetUserId: userId,
+    };
+    await saveAuditLog(logEntry); // Save log using the helper
+
+    // Update current user if they're the one being activated
+    const currentUser = localStorage.getItem('currentUser');
+    if (currentUser) {
+      const userData = JSON.parse(currentUser);
+      if (userData.id === userId) {
+        const updatedUserData = {
+          ...userData,
+          status: 'active',
+          updatedAt: new Date().toISOString(),
+        };
+        localStorage.setItem('currentUser', JSON.stringify(updatedUserData));
+
+        // Trigger a refresh event for other components
+        window.dispatchEvent(new CustomEvent('userStatusChanged', {
+          detail: { user: updatedUserData, action: 'activated' }
+        }));
       }
     }
-    
+
+    // Trigger a refresh event for admin panel
+    window.dispatchEvent(new CustomEvent('refreshAdminData'));
+
     return true;
   } catch (error) {
     console.error('Error activating user:', error);
     return false;
   }
-}
+};
 
-export function adjustUserBalance(userId: string, newTotalBalance: number, newTradingBalance: number, adminId: string, adminEmail: string, reason: string): boolean {
+export const adjustUserBalance = async (userId: string, newTotalBalance: number, newTradingBalance: number, adminId: string, adminEmail: string, reason: string): Promise<boolean> => {
   try {
-    const users = getAllUsers();
-    const userIndex = users.findIndex(u => u.id === userId);
-    
-    if (userIndex === -1) return false;
-    
-    const oldTotalBalance = users[userIndex].totalBalance;
-    const oldTradingBalance = users[userIndex].tradingBalance;
-    
-    users[userIndex].totalBalance = newTotalBalance;
-    users[userIndex].tradingBalance = newTradingBalance;
-    localStorage.setItem('allUsers', JSON.stringify(users));
-    
-    // Update current user if it's the same user
-    const currentUserData = localStorage.getItem('currentUser');
-    if (currentUserData) {
-      const currentUser = JSON.parse(currentUserData);
-      if (currentUser.id === userId) {
-        currentUser.totalBalance = newTotalBalance;
-        currentUser.tradingBalance = newTradingBalance;
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-      }
-    }
-    
+    const { error } = await supabase
+      .from('users')
+      .update({
+        totalBalance: newTotalBalance,
+        tradingBalance: newTradingBalance,
+      })
+      .eq('id', userId);
+
+    if (error) throw error;
+
     // Log the balance adjustment
     const balanceLog = {
       id: Date.now().toString(),
-      userId,
+      timestamp: new Date().toISOString(),
+      action: 'User balance adjusted',
       adminId,
       adminEmail,
-      oldTotalBalance,
-      oldTradingBalance,
+      details: `Balance adjusted for user ${userId}. Reason: ${reason}`,
+      targetUserId: userId,
+      oldTotalBalance: (await supabase.from('users').select('totalBalance').eq('id', userId).single()).data?.totalBalance,
+      oldTradingBalance: (await supabase.from('users').select('tradingBalance').eq('id', userId).single()).data?.tradingBalance,
       newTotalBalance,
       newTradingBalance,
-      reason,
-      timestamp: new Date()
     };
-    
-    const existingLogs = localStorage.getItem('balanceAdjustmentLogs');
-    const logs = existingLogs ? JSON.parse(existingLogs) : [];
-    logs.push(balanceLog);
-    localStorage.setItem('balanceAdjustmentLogs', JSON.stringify(logs));
-    
+    await saveAuditLog(balanceLog);
+
+    // Update current user if it's the same user
+    const currentUser = localStorage.getItem('currentUser');
+    if (currentUser) {
+      const userData = JSON.parse(currentUser);
+      if (userData.id === userId) {
+        const updatedUserData = {
+          ...userData,
+          totalBalance: newTotalBalance,
+          tradingBalance: newTradingBalance,
+        };
+        localStorage.setItem('currentUser', JSON.stringify(updatedUserData));
+        window.dispatchEvent(new CustomEvent('balanceUpdated', { detail: { userId: userId, newBalance: newTotalBalance } }));
+      }
+    }
+
     return true;
   } catch (error) {
     console.error('Error adjusting user balance:', error);
     return false;
   }
-}
+};
 
 export function useTrading() {
   const context = useContext(TradingContext);

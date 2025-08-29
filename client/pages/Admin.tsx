@@ -80,7 +80,26 @@ export default function Admin() {
     
     // Auto-refresh every 5 seconds for real-time updates
     const interval = setInterval(refreshData, 5000);
-    return () => clearInterval(interval);
+    
+    // Listen for admin refresh events
+    const handleAdminRefresh = () => {
+      refreshData();
+    };
+    
+    const handleUserStatusChange = (event: CustomEvent) => {
+      const { user, action } = event.detail;
+      console.log(`User ${user.email} has been ${action}`);
+      refreshData();
+    };
+    
+    window.addEventListener('refreshAdminData', handleAdminRefresh);
+    window.addEventListener('userStatusChanged', handleUserStatusChange as EventListener);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('refreshAdminData', handleAdminRefresh);
+      window.removeEventListener('userStatusChanged', handleUserStatusChange as EventListener);
+    };
   }, []);
 
   const formatCurrency = (amount: number) => {
