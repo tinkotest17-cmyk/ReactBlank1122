@@ -1,385 +1,324 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, AuthContextType } from '@shared/types';
-import { supabase } from '@shared/supabase';
+import { supabase } from '../supabaseClient';
+
+interface User {
+  id: string;
+  email: string;
+  username: string;
+  balance: number;
+  is_admin: boolean;
+  is_active: boolean;
+}
+
+interface AuthContextType {
+  user: User | null;
+  users: User[];
+  isAuthenticated: boolean;
+  login: (email: string, password: string) => Promise<boolean>;
+  register: (email: string, username: string, password: string) => Promise<boolean>;
+  logout: () => void;
+  updateUserBalance: (userId: string, newBalance: number) => Promise<void>;
+  fetchUsers: () => Promise<void>;
+  toggleUserStatus: (userId: string) => Promise<void>;
+  promoteToAdmin: (userId: string) => Promise<void>;
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Initialize users in localStorage if not exists
-const initializeUsers = () => {
-  const existingUsers = localStorage.getItem('allUsers');
-  if (!existingUsers) {
-    const MOCK_USERS: User[] = [
+const initializeLocalStorage = () => {
+  if (!localStorage.getItem('users')) {
+    const defaultUsers = [
       {
         id: '1',
-        email: 'admin@trading.com',
+        email: 'admin@example.com',
         username: 'admin',
-        phone: '+1-555-0001',
-        country: 'United States',
         password: 'admin123',
-        role: 'admin',
-        totalBalance: 100000,
-        tradingBalance: 25000,
-        createdAt: new Date('2024-01-01'),
-        status: 'active'
+        balance: 10000,
+        is_admin: true,
+        is_active: true
       },
       {
         id: '2',
-        email: 'user@trading.com',
+        email: 'user@example.com',
         username: 'user',
-        phone: '+1-555-0002',
-        country: 'Canada',
         password: 'user123',
-        role: 'user',
-        totalBalance: 10000,
-        tradingBalance: 5000,
-        createdAt: new Date('2024-01-15'),
-        status: 'active'
-      },
-      {
-        id: '3',
-        email: 'trader@example.com',
-        username: 'trader',
-        phone: '+44-20-7946-0958',
-        country: 'United Kingdom',
-        password: 'password123',
-        role: 'user',
-        totalBalance: 7500,
-        tradingBalance: 3000,
-        createdAt: new Date('2024-02-01'),
-        status: 'active'
+        balance: 5000,
+        is_admin: false,
+        is_active: true
       }
     ];
-    localStorage.setItem('allUsers', JSON.stringify(MOCK_USERS));
+    localStorage.setItem('users', JSON.stringify(defaultUsers));
   }
-};
-
-// Initialize users on load
-initializeUsers();
-
-const getAllUsers = (): User[] => {
-  const users = localStorage.getItem('allUsers');
-  return users ? JSON.parse(users) : [];
-};
-
-// Mock passwords (in real app, this would be handled by backend)
-const MOCK_CREDENTIALS = {
-  'admin@trading.com': 'admin123',
-  'user@trading.com': 'user123',
-  'trader@example.com': 'password123'
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Check if user is logged in from localStorage
+    initializeLocalStorage();
+    
+    // Check if user is logged in
     const savedUser = localStorage.getItem('currentUser');
     if (savedUser) {
-      const userData = JSON.parse(savedUser);
-      setUser(userData);
+      setUser(JSON.parse(savedUser));
       setIsAuthenticated(true);
     }
 
-    // Listen for balance refresh events from other components
-    const handleRefreshBalance = () => {
-      refreshBalance();
-    };
-
-    window.addEventListener('refreshBalance', handleRefreshBalance);
-
-    return () => {
-      window.removeEventListener('refreshBalance', handleRefreshBalance);
-    };
+    fetchUsers();
   }, []);
 
+  const fetchUsers = async () => {
+    try {
+      // Try to fetch from Supabase first
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, email, username, balance, is_admin, is_active');
+
+      if (!error && data) {
+        setUsers(data);
+      } else {
+        // Fallback to localStorage
+        const localUsers = JSON.parse(localStorage.getItem('users') || '[]');
+        setUsers(localUsers.map((u: any) => ({
+          id: u.id,
+          email: u.email,
+          username: u.username,
+          balance: u.balance,
+          is_admin: u.is_admin,
+          is_active: u.is_active
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      // Fallback to localStorage
+      const localUsers = JSON.parse(localStorage.getItem('users') || '[]');
+      setUsers(localUsers.map((u: any) => ({
+        id: u.id,
+        email: u.email,
+        username: u.username,
+        balance: u.balance,
+        is_admin: u.is_admin,
+        is_active: u.is_active
+      })));
+    }
+  };
+
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      // Try Supabase authentication first
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .single();
 
-    // Try Supabase login
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', email)
-      .single();
-
-    if (!error && data) {
-      // Verify password (Supabase won't return the password, so this part is tricky without a dedicated auth flow)
-      // For mock purposes, we'll assume a successful Supabase fetch means the user exists and password check is handled elsewhere or implicitly.
-      // In a real app, you'd use Supabase Auth or a password verification step.
-      // For now, we'll proceed if Supabase returns data.
-      if (data.password === password) { // This is a placeholder, Supabase should not expose password
-        // Map snake_case to camelCase for frontend compatibility
-        const user = {
+      if (!error && data) {
+        // In a real app, you'd verify the password hash
+        const loginUser = {
           id: data.id,
           email: data.email,
           username: data.username,
-          phone: data.first_name, // Assuming first_name maps to phone
-          country: data.last_name, // Assuming last_name maps to country
-          role: data.role,
-          status: data.status,
-          totalBalance: parseFloat(data.total_balance || '0'),
-          tradingBalance: parseFloat(data.trading_balance || '0'),
-          createdAt: new Date(data.created_at),
-          updatedAt: data.updated_at ? new Date(data.updated_at) : undefined,
+          balance: data.balance,
+          is_admin: data.is_admin,
+          is_active: data.is_active
         };
-        setUser(user);
+        
+        setUser(loginUser);
         setIsAuthenticated(true);
-        localStorage.setItem('currentUser', JSON.stringify(user));
+        localStorage.setItem('currentUser', JSON.stringify(loginUser));
         return true;
       } else {
-        return false; // Password mismatch
+        // Fallback to localStorage
+        const localUsers = JSON.parse(localStorage.getItem('users') || '[]');
+        const foundUser = localUsers.find((u: any) => u.email === email && u.password === password);
+        
+        if (foundUser && foundUser.is_active) {
+          const loginUser = {
+            id: foundUser.id,
+            email: foundUser.email,
+            username: foundUser.username,
+            balance: foundUser.balance,
+            is_admin: foundUser.is_admin,
+            is_active: foundUser.is_active
+          };
+          
+          setUser(loginUser);
+          setIsAuthenticated(true);
+          localStorage.setItem('currentUser', JSON.stringify(loginUser));
+          return true;
+        }
       }
+    } catch (error) {
+      console.error('Login error:', error);
     }
-
-    // Fallback to mock credentials if Supabase login fails or for initial setup
-    const expectedPassword = MOCK_CREDENTIALS[email as keyof typeof MOCK_CREDENTIALS];
-    if (!expectedPassword || expectedPassword !== password) {
-      return false;
-    }
-
-    const allUsers = getAllUsers();
-    const foundUser = allUsers.find(u => u.email === email);
-    if (foundUser) {
-      setUser(foundUser);
-      setIsAuthenticated(true);
-      localStorage.setItem('currentUser', JSON.stringify(foundUser));
-      return true;
-    }
+    
     return false;
   };
 
-  const signup = async (email: string, password: string, confirmPassword: string, phone?: string, country?: string): Promise<{ success: boolean; error?: string }> => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    // Validation
-    if (password !== confirmPassword) {
-      return { success: false, error: 'Passwords do not match' };
-    }
-
-    if (password.length < 6) {
-      return { success: false, error: 'Password must be at least 6 characters' };
-    }
-
-    // Check if user already exists in localStorage (fallback)
-    const allUsersLocalStorage = getAllUsers();
-    if (allUsersLocalStorage.find(u => u.email === email)) {
-      return { success: false, error: 'User already exists with this email' };
-    }
-
-    // Try to create user in Supabase
+  const register = async (email: string, username: string, password: string): Promise<boolean> => {
     try {
-      const userData = {
-        email,
-        username: email.split('@')[0],
-        role: 'user' as const,
-        total_balance: 10000,
-        trading_balance: 5000,
-        first_name: phone || '', // Mapping phone to first_name
-        last_name: country || '', // Mapping country to last_name
-        status: 'active' as const,
-        created_at: new Date().toISOString(), // Add created_at
-      };
+      // Try to register in Supabase first
+      const { data, error } = await supabase
+        .from('users')
+        .insert([{
+          email,
+          username,
+          password_hash: password, // In real app, hash this
+          balance: 1000,
+          is_admin: false,
+          is_active: true
+        }])
+        .select()
+        .single();
 
-      const { data, error } = await supabase.from('users').insert([userData]).select().single();
+      if (!error && data) {
+        await fetchUsers();
+        return true;
+      } else {
+        // Fallback to localStorage
+        const localUsers = JSON.parse(localStorage.getItem('users') || '[]');
+        
+        // Check if user already exists
+        if (localUsers.some((u: any) => u.email === email || u.username === username)) {
+          return false;
+        }
 
-      if (error) {
-        console.error('Supabase signup error:', error);
-        // Fallback to localStorage if Supabase fails
-        const newUser: User = {
+        const newUser = {
           id: Date.now().toString(),
           email,
-          username: email.split('@')[0],
-          role: 'user' as const,
-          totalBalance: 10000,
-          tradingBalance: 5000,
-          phone,
-          country,
-          status: 'active' as const,
-          createdAt: new Date(),
+          username,
+          password,
+          balance: 1000,
+          is_admin: false,
+          is_active: true
         };
-        const updatedUsers = [...allUsersLocalStorage, newUser];
-        localStorage.setItem('allUsers', JSON.stringify(updatedUsers));
-        localStorage.setItem('currentUser', JSON.stringify(newUser));
-        setUser(newUser);
-        setIsAuthenticated(true);
-        return { success: true };
-      } else if (data) {
-        // Map Supabase response to User type
-        const newUser: User = {
-          id: data.id,
-          email: data.email,
-          username: data.username,
-          phone: data.first_name, // Map from first_name
-          country: data.last_name, // Map from last_name
-          role: data.role,
-          status: data.status,
-          totalBalance: parseFloat(data.total_balance || '0'),
-          tradingBalance: parseFloat(data.trading_balance || '0'),
-          createdAt: new Date(data.created_at),
-          // updatedAt: data.updated_at ? new Date(data.updated_at) : undefined, // if available in schema
-        };
-        setUser(newUser);
-        setIsAuthenticated(true);
-        localStorage.setItem('currentUser', JSON.stringify(newUser));
-        return { success: true };
+
+        localUsers.push(newUser);
+        localStorage.setItem('users', JSON.stringify(localUsers));
+        await fetchUsers();
+        return true;
       }
     } catch (error) {
-      console.error('Error during signup process:', error);
-      return { success: false, error: 'An unexpected error occurred during signup.' };
+      console.error('Registration error:', error);
+      return false;
     }
-    return { success: false, error: 'Failed to create user.' };
   };
 
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
     localStorage.removeItem('currentUser');
-    // Optionally clear Supabase session here if using Supabase Auth
   };
 
-  const updateUserBalance = (totalBalance: number, tradingBalance: number) => {
-    if (user) {
-      const updatedUser = {
-        ...user,
-        totalBalance,
-        tradingBalance
-      };
-      setUser(updatedUser);
-      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-
-      // Update Supabase as well
-      const updateUserInSupabase = async () => {
-        const { error } = await supabase
-          .from('users')
-          .update({
-            total_balance: totalBalance,
-            trading_balance: tradingBalance,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', user.id);
-        if (error) console.error('Error updating balance in Supabase:', error);
-      };
-      updateUserInSupabase();
-    }
-  };
-
-  const updateUserProfile = async (profileData: Partial<User> & { currentPassword?: string }): Promise<boolean> => {
-    if (!user) return false;
-
+  const updateUserBalance = async (userId: string, newBalance: number) => {
     try {
-      // Prepare data for Supabase update (snake_case)
-      const supabaseUpdateData: { [key: string]: any } = {};
-
-      if (profileData.username !== undefined) supabaseUpdateData.username = profileData.username;
-      if (profileData.email !== undefined) supabaseUpdateData.email = profileData.email;
-      if (profileData.phone !== undefined) supabaseUpdateData.first_name = profileData.phone; // Map phone to first_name
-      if (profileData.country !== undefined) supabaseUpdateData.last_name = profileData.country; // Map country to last_name
-      if (profileData.role !== undefined) supabaseUpdateData.role = profileData.role;
-      if (profileData.status !== undefined) supabaseUpdateData.status = profileData.status;
-      if (profileData.password) {
-        // In a real app, you'd handle password updates securely, likely via Supabase Auth.
-        // For this mock, we'll simulate it. If current password matches, update.
-        // This part needs a secure implementation.
-        return false; // Placeholder for secure password update logic
-      }
-
-      if (Object.keys(supabaseUpdateData).length === 0) return true; // No changes to update
-
+      // Try to update in Supabase first
       const { error } = await supabase
         .from('users')
-        .update(supabaseUpdateData)
-        .eq('id', user.id);
+        .update({ balance: newBalance })
+        .eq('id', userId);
 
       if (error) {
-        console.error('Error updating user profile in Supabase:', error);
-        return false;
+        // Fallback to localStorage
+        const localUsers = JSON.parse(localStorage.getItem('users') || '[]');
+        const updatedUsers = localUsers.map((u: any) => 
+          u.id === userId ? { ...u, balance: newBalance } : u
+        );
+        localStorage.setItem('users', JSON.stringify(updatedUsers));
       }
 
-      // Update local state and localStorage
-      const updatedUser = {
-        ...user,
-        ...profileData,
-        phone: profileData.phone || user.phone, // Ensure correct mapping
-        country: profileData.country || user.country, // Ensure correct mapping
-      };
-      if (profileData.phone !== undefined) updatedUser.phone = profileData.phone;
-      if (profileData.country !== undefined) updatedUser.country = profileData.country;
-
-      setUser(updatedUser);
-      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-
-      return true;
-    } catch (error) {
-      console.error('Error updating user profile:', error);
-      return false;
-    }
-  };
-
-  const refreshBalance = async () => {
-    if (!user) return;
-
-    try {
-      // Fetch latest balance from Supabase
-      const { data, error } = await supabase
-        .from('users')
-        .select('total_balance, trading_balance')
-        .eq('id', user.id)
-        .single();
-
-      if (error) {
-        console.error('Error fetching balance from Supabase:', error);
-        // Fallback or show error to user
-        return;
-      }
-
-      if (data) {
-        const updatedUser = {
-          ...user,
-          totalBalance: parseFloat(data.total_balance || '0'),
-          tradingBalance: parseFloat(data.trading_balance || '0'),
-          updatedAt: new Date() // Assuming updated_at might be available or just update timestamp
-        };
+      // Update current user if it's the same user
+      if (user && user.id === userId) {
+        const updatedUser = { ...user, balance: newBalance };
         setUser(updatedUser);
         localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-
-        // Trigger a refresh event for other components
-        window.dispatchEvent(new CustomEvent('balanceRefresh', {
-          detail: { user: updatedUser }
-        }));
       }
+
+      await fetchUsers();
     } catch (error) {
-      console.error('Unexpected error during balance refresh:', error);
+      console.error('Error updating user balance:', error);
     }
   };
 
-  const isAdmin = () => {
-    return user?.role === 'admin';
+  const toggleUserStatus = async (userId: string) => {
+    try {
+      const userToUpdate = users.find(u => u.id === userId);
+      if (!userToUpdate) return;
+
+      const newStatus = !userToUpdate.is_active;
+
+      // Try to update in Supabase first
+      const { error } = await supabase
+        .from('users')
+        .update({ is_active: newStatus })
+        .eq('id', userId);
+
+      if (error) {
+        // Fallback to localStorage
+        const localUsers = JSON.parse(localStorage.getItem('users') || '[]');
+        const updatedUsers = localUsers.map((u: any) => 
+          u.id === userId ? { ...u, is_active: newStatus } : u
+        );
+        localStorage.setItem('users', JSON.stringify(updatedUsers));
+      }
+
+      await fetchUsers();
+    } catch (error) {
+      console.error('Error toggling user status:', error);
+    }
+  };
+
+  const promoteToAdmin = async (userId: string) => {
+    try {
+      // Try to update in Supabase first
+      const { error } = await supabase
+        .from('users')
+        .update({ is_admin: true })
+        .eq('id', userId);
+
+      if (error) {
+        // Fallback to localStorage
+        const localUsers = JSON.parse(localStorage.getItem('users') || '[]');
+        const updatedUsers = localUsers.map((u: any) => 
+          u.id === userId ? { ...u, is_admin: true } : u
+        );
+        localStorage.setItem('users', JSON.stringify(updatedUsers));
+      }
+
+      await fetchUsers();
+    } catch (error) {
+      console.error('Error promoting user to admin:', error);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      isAuthenticated,
-      login,
-      signup,
-      updateUserBalance,
-      updateUserProfile,
-      refreshBalance,
-      logout,
-      isAdmin
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        users,
+        isAuthenticated,
+        login,
+        register,
+        logout,
+        updateUserBalance,
+        fetchUsers,
+        toggleUserStatus,
+        promoteToAdmin,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 }
 
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}
+};
