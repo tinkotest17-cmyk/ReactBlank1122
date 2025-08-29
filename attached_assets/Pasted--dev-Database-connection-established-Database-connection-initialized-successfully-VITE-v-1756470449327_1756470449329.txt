@@ -1,0 +1,281 @@
+> dev
+✅ Database connection established
+✅ Database connection initialized successfully
+
+  VITE v7.1.3  ready in 623 ms
+
+  ➜  Local:   http://localhost:8080/
+  ➜  Network: http://172.31.75.98:8080/
+  ➜  press h + enter to show help
+12:24:38 PM [vite] (client) Pre-transform error: Failed to resolve import "../supabaseClient" from "client/contexts/AuthContext.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/runner/workspace/client/contexts/AuthContext.tsx:3:25
+  21 |  var _s = $RefreshSig$(), _s1 = $RefreshSig$();
+  22 |  import React, { createContext, useContext, useState, useEffect } from 'react';
+  23 |  import { supabase } from '../supabaseClient'; // Assuming supabase client is set up here
+     |                            ^
+  24 |  const AuthContext = /*#__PURE__*/ createContext(undefined);
+  25 |  // Initialize users in localStorage if not exists
+
+
+
+
+
+12:24:38 PM [vite] (client) Pre-transform error: Failed to resolve import "../supabaseClient" from "client/contexts/AuthContext.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/runner/workspace/client/contexts/AuthContext.tsx:3:25
+  21 |  var _s = $RefreshSig$(), _s1 = $RefreshSig$();
+  22 |  import React, { createContext, useContext, useState, useEffect } from 'react';
+  23 |  import { supabase } from '../supabaseClient'; // Assuming supabase client is set up here
+     |                            ^
+  24 |  const AuthContext = /*#__PURE__*/ createContext(undefined);
+  25 |  // Initialize users in localStorage if not exists (x2)
+
+
+
+
+
+12:24:38 PM [vite] (client) Pre-transform error: Failed to resolve import "../supabaseClient" from "client/contexts/AuthContext.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/runner/workspace/client/contexts/AuthContext.tsx:3:25
+  21 |  var _s = $RefreshSig$(), _s1 = $RefreshSig$();
+  22 |  import React, { createContext, useContext, useState, useEffect } from 'react';
+  23 |  import { supabase } from '../supabaseClient'; // Assuming supabase client is set up here
+     |                            ^
+  24 |  const AuthContext = /*#__PURE__*/ createContext(undefined);
+  25 |  // Initialize users in localStorage if not exists (x3)
+
+
+
+
+
+12:24:38 PM [vite] (client) Pre-transform error: Failed to resolve import "../supabaseClient" from "client/contexts/AuthContext.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/runner/workspace/client/contexts/AuthContext.tsx:3:25
+  21 |  var _s = $RefreshSig$(), _s1 = $RefreshSig$();
+  22 |  import React, { createContext, useContext, useState, useEffect } from 'react';
+  23 |  import { supabase } from '../supabaseClient'; // Assuming supabase client is set up here
+     |                            ^
+  24 |  const AuthContext = /*#__PURE__*/ createContext(undefined);
+  25 |  // Initialize users in localStorage if not exists (x4)
+
+
+
+
+
+12:24:38 PM [vite] (client) Pre-transform error: Failed to resolve import "../supabaseClient" from "client/contexts/AuthContext.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/runner/workspace/client/contexts/AuthContext.tsx:3:25
+  21 |  var _s = $RefreshSig$(), _s1 = $RefreshSig$();
+  22 |  import React, { createContext, useContext, useState, useEffect } from 'react';
+  23 |  import { supabase } from '../supabaseClient'; // Assuming supabase client is set up here
+     |                            ^
+  24 |  const AuthContext = /*#__PURE__*/ createContext(undefined);
+  25 |  // Initialize users in localStorage if not exists (x5)
+12:24:38 PM [vite] (client) Pre-transform error: Failed to resolve import "../supabaseClient" from "client/contexts/AuthContext.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/runner/workspace/client/contexts/AuthContext.tsx:3:25
+  21 |  var _s = $RefreshSig$(), _s1 = $RefreshSig$();
+  22 |  import React, { createContext, useContext, useState, useEffect } from 'react';
+  23 |  import { supabase } from '../supabaseClient'; // Assuming supabase client is set up here
+     |                            ^
+  24 |  const AuthContext = /*#__PURE__*/ createContext(undefined);
+  25 |  // Initialize users in localStorage if not exists (x6)
+12:24:38 PM [vite] (client) Pre-transform error: Failed to resolve import "../supabaseClient" from "client/contexts/AuthContext.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/runner/workspace/client/contexts/AuthContext.tsx:3:25
+  21 |  var _s = $RefreshSig$(), _s1 = $RefreshSig$();
+  22 |  import React, { createContext, useContext, useState, useEffect } from 'react';
+  23 |  import { supabase } from '../supabaseClient'; // Assuming supabase client is set up here
+     |                            ^
+  24 |  const AuthContext = /*#__PURE__*/ createContext(undefined);
+  25 |  // Initialize users in localStorage if not exists (x7)
+12:24:38 PM [vite] (client) Pre-transform error: Failed to resolve import "../supabaseClient" from "client/contexts/AuthContext.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/runner/workspace/client/contexts/AuthContext.tsx:3:25
+  21 |  var _s = $RefreshSig$(), _s1 = $RefreshSig$();
+  22 |  import React, { createContext, useContext, useState, useEffect } from 'react';
+  23 |  import { supabase } from '../supabaseClient'; // Assuming supabase client is set up here
+     |                            ^
+  24 |  const AuthContext = /*#__PURE__*/ createContext(undefined);
+  25 |  // Initialize users in localStorage if not exists (x8)
+12:24:38 PM [vite] (client) Pre-transform error: Failed to resolve import "../supabaseClient" from "client/contexts/AuthContext.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/runner/workspace/client/contexts/AuthContext.tsx:3:25
+  21 |  var _s = $RefreshSig$(), _s1 = $RefreshSig$();
+  22 |  import React, { createContext, useContext, useState, useEffect } from 'react';
+  23 |  import { supabase } from '../supabaseClient'; // Assuming supabase client is set up here
+     |                            ^
+  24 |  const AuthContext = /*#__PURE__*/ createContext(undefined);
+  25 |  // Initialize users in localStorage if not exists (x9)
+12:24:38 PM [vite] (client) Pre-transform error: Failed to resolve import "../supabaseClient" from "client/contexts/AuthContext.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/runner/workspace/client/contexts/AuthContext.tsx:3:25
+  21 |  var _s = $RefreshSig$(), _s1 = $RefreshSig$();
+  22 |  import React, { createContext, useContext, useState, useEffect } from 'react';
+  23 |  import { supabase } from '../supabaseClient'; // Assuming supabase client is set up here
+     |                            ^
+  24 |  const AuthContext = /*#__PURE__*/ createContext(undefined);
+  25 |  // Initialize users in localStorage if not exists (x10)
+12:24:38 PM [vite] (client) Pre-transform error: Failed to resolve import "../supabaseClient" from "client/contexts/AuthContext.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/runner/workspace/client/contexts/AuthContext.tsx:3:25
+  21 |  var _s = $RefreshSig$(), _s1 = $RefreshSig$();
+  22 |  import React, { createContext, useContext, useState, useEffect } from 'react';
+  23 |  import { supabase } from '../supabaseClient'; // Assuming supabase client is set up here
+     |                            ^
+  24 |  const AuthContext = /*#__PURE__*/ createContext(undefined);
+  25 |  // Initialize users in localStorage if not exists (x11)
+12:24:38 PM [vite] (client) Pre-transform error: Failed to resolve import "../supabaseClient" from "client/contexts/AuthContext.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/runner/workspace/client/contexts/AuthContext.tsx:3:25
+  21 |  var _s = $RefreshSig$(), _s1 = $RefreshSig$();
+  22 |  import React, { createContext, useContext, useState, useEffect } from 'react';
+  23 |  import { supabase } from '../supabaseClient'; // Assuming supabase client is set up here
+     |                            ^
+  24 |  const AuthContext = /*#__PURE__*/ createContext(undefined);
+  25 |  // Initialize users in localStorage if not exists (x12)
+12:24:39 PM [vite] (client) Pre-transform error: Failed to resolve import "../supabaseClient" from "client/contexts/AuthContext.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/runner/workspace/client/contexts/AuthContext.tsx:3:25
+  21 |  var _s = $RefreshSig$(), _s1 = $RefreshSig$();
+  22 |  import React, { createContext, useContext, useState, useEffect } from 'react';
+  23 |  import { supabase } from '../supabaseClient'; // Assuming supabase client is set up here
+     |                            ^
+  24 |  const AuthContext = /*#__PURE__*/ createContext(undefined);
+  25 |  // Initialize users in localStorage if not exists (x13)
+12:24:39 PM [vite] (client) Pre-transform error: Failed to resolve import "../supabaseClient" from "client/contexts/AuthContext.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/runner/workspace/client/contexts/AuthContext.tsx:3:25
+  21 |  var _s = $RefreshSig$(), _s1 = $RefreshSig$();
+  22 |  import React, { createContext, useContext, useState, useEffect } from 'react';
+  23 |  import { supabase } from '../supabaseClient'; // Assuming supabase client is set up here
+     |                            ^
+  24 |  const AuthContext = /*#__PURE__*/ createContext(undefined);
+  25 |  // Initialize users in localStorage if not exists (x14)
+12:24:39 PM [vite] (client) Pre-transform error: Failed to resolve import "../supabaseClient" from "client/contexts/AuthContext.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/runner/workspace/client/contexts/AuthContext.tsx:3:25
+  21 |  var _s = $RefreshSig$(), _s1 = $RefreshSig$();
+  22 |  import React, { createContext, useContext, useState, useEffect } from 'react';
+  23 |  import { supabase } from '../supabaseClient'; // Assuming supabase client is set up here
+     |                            ^
+  24 |  const AuthContext = /*#__PURE__*/ createContext(undefined);
+  25 |  // Initialize users in localStorage if not exists (x15)
+12:24:39 PM [vite] (client) Pre-transform error: Failed to resolve import "../supabaseClient" from "client/contexts/AuthContext.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/runner/workspace/client/contexts/AuthContext.tsx:3:25
+  21 |  var _s = $RefreshSig$(), _s1 = $RefreshSig$();
+  22 |  import React, { createContext, useContext, useState, useEffect } from 'react';
+  23 |  import { supabase } from '../supabaseClient'; // Assuming supabase client is set up here
+     |                            ^
+  24 |  const AuthContext = /*#__PURE__*/ createContext(undefined);
+  25 |  // Initialize users in localStorage if not exists (x16)
+12:24:40 PM [vite] Internal server error: Failed to resolve import "../supabaseClient" from "client/contexts/AuthContext.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/runner/workspace/client/contexts/AuthContext.tsx:3:25
+  21 |  var _s = $RefreshSig$(), _s1 = $RefreshSig$();
+  22 |  import React, { createContext, useContext, useState, useEffect } from 'react';
+  23 |  import { supabase } from '../supabaseClient'; // Assuming supabase client is set up here
+     |                            ^
+  24 |  const AuthContext = /*#__PURE__*/ createContext(undefined);
+  25 |  // Initialize users in localStorage if not exists
+      at TransformPluginContext._formatLog (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:31422:43)
+      at TransformPluginContext.error (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:31419:14)
+      at normalizeUrl (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:29891:18)
+      at async file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:29949:32
+      at async Promise.all (index 4)
+      at async TransformPluginContext.transform (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:29917:4)
+      at async EnvironmentPluginContainer.transform (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:31220:14)
+      at async loadAndTransform (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:26307:26)
+      at async viteTransformMiddleware (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:27392:20)
+12:24:41 PM [vite] Internal server error: Failed to resolve import "../supabaseClient" from "client/contexts/AuthContext.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/runner/workspace/client/contexts/AuthContext.tsx:3:25
+  21 |  var _s = $RefreshSig$(), _s1 = $RefreshSig$();
+  22 |  import React, { createContext, useContext, useState, useEffect } from 'react';
+  23 |  import { supabase } from '../supabaseClient'; // Assuming supabase client is set up here
+     |                            ^
+  24 |  const AuthContext = /*#__PURE__*/ createContext(undefined);
+  25 |  // Initialize users in localStorage if not exists
+      at TransformPluginContext._formatLog (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:31422:43)
+      at TransformPluginContext.error (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:31419:14)
+      at normalizeUrl (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:29891:18)
+      at async file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:29949:32
+      at async Promise.all (index 4)
+      at async TransformPluginContext.transform (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:29917:4)
+      at async EnvironmentPluginContainer.transform (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:31220:14)
+      at async loadAndTransform (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:26307:26)
+      at async viteTransformMiddleware (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:27392:20) (x2)
+12:24:43 PM [vite] Internal server error: Failed to resolve import "../supabaseClient" from "client/contexts/AuthContext.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/runner/workspace/client/contexts/AuthContext.tsx:3:25
+  21 |  var _s = $RefreshSig$(), _s1 = $RefreshSig$();
+  22 |  import React, { createContext, useContext, useState, useEffect } from 'react';
+  23 |  import { supabase } from '../supabaseClient'; // Assuming supabase client is set up here
+     |                            ^
+  24 |  const AuthContext = /*#__PURE__*/ createContext(undefined);
+  25 |  // Initialize users in localStorage if not exists
+      at TransformPluginContext._formatLog (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:31422:43)
+      at TransformPluginContext.error (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:31419:14)
+      at normalizeUrl (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:29891:18)
+      at async file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:29949:32
+      at async Promise.all (index 4)
+      at async TransformPluginContext.transform (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:29917:4)
+      at async EnvironmentPluginContainer.transform (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:31220:14)
+      at async loadAndTransform (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:26307:26)
+      at async viteTransformMiddleware (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:27392:20) (x3)
+12:25:06 PM [vite] Internal server error: Failed to resolve import "../supabaseClient" from "client/contexts/AuthContext.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/runner/workspace/client/contexts/AuthContext.tsx:3:25
+  21 |  var _s = $RefreshSig$(), _s1 = $RefreshSig$();
+  22 |  import React, { createContext, useContext, useState, useEffect } from 'react';
+  23 |  import { supabase } from '../supabaseClient'; // Assuming supabase client is set up here
+     |                            ^
+  24 |  const AuthContext = /*#__PURE__*/ createContext(undefined);
+  25 |  // Initialize users in localStorage if not exists
+      at TransformPluginContext._formatLog (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:31422:43)
+      at TransformPluginContext.error (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:31419:14)
+      at normalizeUrl (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:29891:18)
+      at async file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:29949:32
+      at async Promise.all (index 4)
+      at async TransformPluginContext.transform (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:29917:4)
+      at async EnvironmentPluginContainer.transform (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:31220:14)
+      at async loadAndTransform (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:26307:26)
+      at async viteTransformMiddleware (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:27392:20) (x4)
+12:25:13 PM [vite] Internal server error: Failed to resolve import "../supabaseClient" from "client/contexts/AuthContext.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/runner/workspace/client/contexts/AuthContext.tsx:3:25
+  21 |  var _s = $RefreshSig$(), _s1 = $RefreshSig$();
+  22 |  import React, { createContext, useContext, useState, useEffect } from 'react';
+  23 |  import { supabase } from '../supabaseClient'; // Assuming supabase client is set up here
+     |                            ^
+  24 |  const AuthContext = /*#__PURE__*/ createContext(undefined);
+  25 |  // Initialize users in localStorage if not exists
+      at TransformPluginContext._formatLog (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:31422:43)
+      at TransformPluginContext.error (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:31419:14)
+      at normalizeUrl (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:29891:18)
+      at async file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:29949:32
+      at async Promise.all (index 4)
+      at async TransformPluginContext.transform (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:29917:4)
+      at async EnvironmentPluginContainer.transform (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:31220:14)
+      at async loadAndTransform (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:26307:26)
+      at async viteTransformMiddleware (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:27392:20) (x5)
+12:25:18 PM [vite] Internal server error: Failed to resolve import "../supabaseClient" from "client/contexts/AuthContext.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /home/runner/workspace/client/contexts/AuthContext.tsx:3:25
+  21 |  var _s = $RefreshSig$(), _s1 = $RefreshSig$();
+  22 |  import React, { createContext, useContext, useState, useEffect } from 'react';
+  23 |  import { supabase } from '../supabaseClient'; // Assuming supabase client is set up here
+     |                            ^
+  24 |  const AuthContext = /*#__PURE__*/ createContext(undefined);
+  25 |  // Initialize users in localStorage if not exists
+      at TransformPluginContext._formatLog (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:31422:43)
+      at TransformPluginContext.error (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:31419:14)
+      at normalizeUrl (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:29891:18)
+      at async file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:29949:32
+      at async Promise.all (index 4)
+      at async TransformPluginContext.transform (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:29917:4)
+      at async EnvironmentPluginContainer.transform (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:31220:14)
+      at async loadAndTransform (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:26307:26)
+      at async viteTransformMiddleware (file:///home/runner/workspace/node_modules/vite/dist/node/chunks/dep-Bj7gA1-0.js:27392:20) (x6)
