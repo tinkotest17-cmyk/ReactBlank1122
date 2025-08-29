@@ -14,13 +14,15 @@ app.use(express.urlencoded({ extended: false }));
 
 // Initialize database connection
 try {
-  const db = getDatabase();
-  console.log('Database connection initialized');
-
-  // Make database available to routes
-  app.locals.db = db;
+  const database = getDatabase();
+  if (database) {
+    console.log('✅ Database connection initialized successfully');
+    app.locals.db = database;
+  } else {
+    console.log('⚠️ Database connection not available (will use localStorage fallback)');
+  }
 } catch (error) {
-  console.error('Failed to initialize database:', error);
+  console.error('❌ Failed to initialize database:', error);
 }
 
 // Add CORS headers for API routes

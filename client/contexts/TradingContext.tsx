@@ -841,36 +841,37 @@ async function getAuditLogs(): Promise<any[]> {
 
 export const suspendUser = async (userId: string, adminId: string, adminEmail: string): Promise<boolean> => {
   try {
-    const users = await getAllUsers(); // Fetch users from Supabase
-    const userIndex = users.findIndex(u => u.id === userId);
-
-    if (userIndex === -1) {
-      console.error('User not found for suspension.');
-      return false;
-    }
-
+    console.log('🔄 Attempting to suspend user:', userId);
+    
     // Update user status in Supabase
     const { error } = await supabase
       .from('users')
       .update({
         status: 'suspended',
-        updatedAt: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .eq('id', userId);
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      throw error;
+    }
+
+    console.log('✅ User status updated in Supabase');
 
     // Log the action
     const logEntry = {
       id: Date.now().toString(),
       timestamp: new Date().toISOString(),
       action: 'User suspended',
-      adminId,
-      adminEmail,
-      details: `User ${users[userIndex].email} suspended by admin`,
-      targetUserId: userId,
+      admin_id: adminId,
+      admin_email: adminEmail,
+      details: `User ${userId} suspended by admin ${adminEmail}`,
+      target_user_id: userId,
     };
-    await saveAuditLog(logEntry); // Save log using the helper
+    
+    await saveAuditLog(logEntry);
+    console.log('✅ Audit log created');
 
     // Update current user if they're the one being suspended
     const currentUser = localStorage.getItem('currentUser');
@@ -894,45 +895,47 @@ export const suspendUser = async (userId: string, adminId: string, adminEmail: s
     // Trigger a refresh event for admin panel
     window.dispatchEvent(new CustomEvent('refreshAdminData'));
 
+    console.log('✅ User suspended successfully');
     return true;
   } catch (error) {
-    console.error('Error suspending user:', error);
+    console.error('❌ Error suspending user:', error);
     return false;
   }
 };
 
 export const activateUser = async (userId: string, adminId: string, adminEmail: string): Promise<boolean> => {
   try {
-    const users = await getAllUsers(); // Fetch users from Supabase
-    const userIndex = users.findIndex(u => u.id === userId);
-
-    if (userIndex === -1) {
-      console.error('User not found for activation.');
-      return false;
-    }
-
+    console.log('🔄 Attempting to activate user:', userId);
+    
     // Update user status in Supabase
     const { error } = await supabase
       .from('users')
       .update({
         status: 'active',
-        updatedAt: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .eq('id', userId);
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      throw error;
+    }
+
+    console.log('✅ User status updated in Supabase');
 
     // Log the action
     const logEntry = {
       id: Date.now().toString(),
       timestamp: new Date().toISOString(),
       action: 'User activated',
-      adminId,
-      adminEmail,
-      details: `User ${users[userIndex].email} activated by admin`,
-      targetUserId: userId,
+      admin_id: adminId,
+      admin_email: adminEmail,
+      details: `User ${userId} activated by admin ${adminEmail}`,
+      target_user_id: userId,
     };
-    await saveAuditLog(logEntry); // Save log using the helper
+    
+    await saveAuditLog(logEntry);
+    console.log('✅ Audit log created');
 
     // Update current user if they're the one being activated
     const currentUser = localStorage.getItem('currentUser');
@@ -956,9 +959,10 @@ export const activateUser = async (userId: string, adminId: string, adminEmail: 
     // Trigger a refresh event for admin panel
     window.dispatchEvent(new CustomEvent('refreshAdminData'));
 
+    console.log('✅ User activated successfully');
     return true;
   } catch (error) {
-    console.error('Error activating user:', error);
+    console.error('❌ Error activating user:', error);
     return false;
   }
 };
