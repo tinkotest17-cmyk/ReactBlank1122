@@ -23,7 +23,6 @@ import Admin from "./pages/Admin";
 import TradingPair from "./pages/TradingPair";
 import Convert from "./pages/Convert";
 import UserManagement from "./pages/UserManagement";
-import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 // Components
@@ -123,12 +122,6 @@ function AppRouter() {
         <Route path="/users" element={
           <ProtectedRoute>
             <UserManagement />
-          </ProtectedRoute>
-        } />
-
-        <Route path="/settings" element={
-          <ProtectedRoute>
-            <Settings />
           </ProtectedRoute>
         } />
 

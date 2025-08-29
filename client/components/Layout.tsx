@@ -24,7 +24,7 @@ import {
   ArrowDownCircle
 } from 'lucide-react';
 import { useState } from 'react';
-import { useLocation, Link, useNavigate } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -34,7 +34,6 @@ export default function Layout({ children }: LayoutProps) {
   const { user, logout, isAdmin } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: TrendingUp },
@@ -152,7 +151,7 @@ export default function Layout({ children }: LayoutProps) {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/settings')}>
+                  <DropdownMenuItem className="cursor-pointer">
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </DropdownMenuItem>

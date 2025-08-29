@@ -105,7 +105,7 @@ export default function History() {
       case 'lost':
         return <Badge variant="destructive">LOST</Badge>;
       default:
-        return <Badge variant="secondary">{String(transaction.status || 'UNKNOWN').toUpperCase()}</Badge>;
+        return <Badge variant="secondary">{transaction.status?.toUpperCase()}</Badge>;
     }
   };
 

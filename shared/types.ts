@@ -2,9 +2,6 @@ export interface User {
   id: string;
   email: string;
   username?: string;
-  phone?: string;
-  country?: string;
-  password?: string; // For admin dashboard viewing
   role: 'admin' | 'user';
   totalBalance: number;
   tradingBalance: number;
@@ -56,9 +53,8 @@ export interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
-  signup: (email: string, password: string, confirmPassword: string, phone?: string, country?: string) => Promise<{ success: boolean; error?: string }>;
+  signup: (email: string, password: string, confirmPassword: string) => Promise<{ success: boolean; error?: string }>;
   updateUserBalance: (totalBalance: number, tradingBalance: number) => void;
-  updateUserProfile: (profileData: Partial<User> & { currentPassword?: string }) => Promise<boolean>;
   refreshBalance: () => Promise<void>;
   logout: () => void;
   isAdmin: () => boolean;

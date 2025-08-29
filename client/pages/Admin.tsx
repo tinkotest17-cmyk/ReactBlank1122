@@ -49,8 +49,6 @@ export default function Admin() {
   const [rejectReason, setRejectReason] = useState('');
   const [selectedTransaction, setSelectedTransaction] = useState<DepositWithdraw | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
-  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
 
   // Redirect if not admin
   if (!isAdmin()) {
@@ -80,26 +78,7 @@ export default function Admin() {
     
     // Auto-refresh every 5 seconds for real-time updates
     const interval = setInterval(refreshData, 5000);
-    
-    // Listen for admin refresh events
-    const handleAdminRefresh = () => {
-      refreshData();
-    };
-    
-    const handleUserStatusChange = (event: CustomEvent) => {
-      const { user, action } = event.detail;
-      console.log(`User ${user.email} has been ${action}`);
-      refreshData();
-    };
-    
-    window.addEventListener('refreshAdminData', handleAdminRefresh);
-    window.addEventListener('userStatusChanged', handleUserStatusChange as EventListener);
-    
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('refreshAdminData', handleAdminRefresh);
-      window.removeEventListener('userStatusChanged', handleUserStatusChange as EventListener);
-    };
+    return () => clearInterval(interval);
   }, []);
 
   const formatCurrency = (amount: number) => {
@@ -201,7 +180,8 @@ export default function Admin() {
 
     if (success) {
       toast.success(`Balance adjusted for ${selectedUser.email}!`);
-      closeBalanceModal();
+      setSelectedUser(null);
+      setBalanceAdjustment({ totalBalance: 0, tradingBalance: 0 });
       refreshData();
     } else {
       toast.error('Failed to adjust balance');
@@ -214,13 +194,6 @@ export default function Admin() {
       totalBalance: targetUser.totalBalance,
       tradingBalance: targetUser.tradingBalance
     });
-    setIsBalanceModalOpen(true);
-  };
-
-  const closeBalanceModal = () => {
-    setIsBalanceModalOpen(false);
-    setSelectedUser(null);
-    setBalanceAdjustment({ totalBalance: 0, tradingBalance: 0 });
   };
 
   return (
@@ -409,11 +382,8 @@ export default function Admin() {
                     <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
                       @{userItem.username}
                     </div>
-                    <div className="text-sm text-slate-600 dark:text-slate-400 space-y-1">
-                      <div>📞 {userItem.phone || 'No phone'}</div>
-                      <div>🌍 {userItem.country || 'No country'}</div>
-                      <div>🔒 {userItem.password || 'No password'}</div>
-                      <div>📅 Joined {formatDate(userItem.createdAt)}</div>
+                    <div className="text-sm text-slate-600 dark:text-slate-400">
+                      Joined {formatDate(userItem.createdAt)}
                     </div>
                   </div>
                 </div>
@@ -459,14 +429,71 @@ export default function Admin() {
                       </Button>
                     )}
                     
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => openBalanceModal(userItem)}
-                    >
-                      <Edit className="h-4 w-4 mr-1" />
-                      Adjust Balance
-                    </Button>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => openBalanceModal(userItem)}
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Adjust Balance
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Adjust Balance for {selectedUser?.email}</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor="total-balance">Total Balance</Label>
+                              <Input
+                                id="total-balance"
+                                type="number"
+                                value={balanceAdjustment.totalBalance}
+                                onChange={(e) => setBalanceAdjustment(prev => ({
+                                  ...prev,
+                                  totalBalance: parseFloat(e.target.value) || 0
+                                }))}
+                                min="0"
+                                step="0.01"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="trading-balance">Trading Balance</Label>
+                              <Input
+                                id="trading-balance"
+                                type="number"
+                                value={balanceAdjustment.tradingBalance}
+                                onChange={(e) => setBalanceAdjustment(prev => ({
+                                  ...prev,
+                                  tradingBalance: parseFloat(e.target.value) || 0
+                                }))}
+                                min="0"
+                                step="0.01"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={handleBalanceAdjustment}
+                            >
+                              Apply Changes
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedUser(null);
+                                setBalanceAdjustment({ totalBalance: 0, tradingBalance: 0 });
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </div>
               </div>
@@ -474,60 +501,6 @@ export default function Admin() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Balance Adjustment Modal */}
-      <Dialog open={isBalanceModalOpen} onOpenChange={setIsBalanceModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Adjust Balance for {selectedUser?.email}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="total-balance">Total Balance</Label>
-                <Input
-                  id="total-balance"
-                  type="number"
-                  value={balanceAdjustment.totalBalance}
-                  onChange={(e) => setBalanceAdjustment(prev => ({
-                    ...prev,
-                    totalBalance: parseFloat(e.target.value) || 0
-                  }))}
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-              <div>
-                <Label htmlFor="trading-balance">Trading Balance</Label>
-                <Input
-                  id="trading-balance"
-                  type="number"
-                  value={balanceAdjustment.tradingBalance}
-                  onChange={(e) => setBalanceAdjustment(prev => ({
-                    ...prev,
-                    tradingBalance: parseFloat(e.target.value) || 0
-                  }))}
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                onClick={handleBalanceAdjustment}
-              >
-                Apply Changes
-              </Button>
-              <Button
-                variant="outline"
-                onClick={closeBalanceModal}
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
