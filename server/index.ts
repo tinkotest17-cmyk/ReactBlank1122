@@ -1,82 +1,122 @@
 
-import "dotenv/config";
-import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
-import { setupVite, serveStatic } from "./vite";
-import { getDatabase } from '../shared/supabase';
+import express from 'express';
+import cors from 'cors';
+import { db, testConnection } from './database';
 
 export function createServer() {
   const app = express();
+  
+  // CORS configuration
+  app.use(cors({
+    origin: process.env.NODE_ENV === 'production' 
+      ? ['https://your-production-domain.com'] 
+      : ['http://localhost:8080', 'http://0.0.0.0:8080'],
+    credentials: true
+  }));
+  
   app.use(express.json());
-  app.use(express.urlencoded({ extended: false }));
-
-  // Initialize database connection
-  try {
-    const database = getDatabase();
-    if (database) {
-      console.log('✅ Database connection initialized successfully');
-      app.locals.db = database;
-    } else {
-      console.log('⚠️ Database connection not available (will use localStorage fallback)');
-    }
-  } catch (error) {
-    console.error('❌ Failed to initialize database:', error);
-  }
-
-  // Add CORS headers for API routes
-  app.use('/api', (req: Request, res: Response, next: NextFunction) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-
-    if (req.method === 'OPTIONS') {
-      res.sendStatus(200);
-    } else {
-      next();
+  
+  // Health check endpoint
+  app.get('/api/health', (req, res) => {
+    res.json({ status: 'OK', timestamp: new Date().toISOString() });
+  });
+  
+  // Test database connection
+  app.get('/api/test-db', async (req, res) => {
+    try {
+      const isConnected = await testConnection();
+      res.json({ 
+        connected: isConnected,
+        message: isConnected ? 'Database connection successful' : 'Database connection failed'
+      });
+    } catch (error) {
+      res.status(500).json({ 
+        connected: false, 
+        message: 'Database connection error',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
-
-  app.use((req, res, next) => {
-    const start = Date.now();
-    const path = req.path;
-    let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-    const originalResJson = res.json;
-    res.json = function (bodyObj, ...args) {
-      capturedJsonResponse = bodyObj;
-      return originalResJson.apply(res, [bodyObj, ...args]);
-    };
-
-    res.on("finish", () => {
-      const duration = Date.now() - start;
-      if (path.startsWith("/api")) {
-        let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-        if (capturedJsonResponse) {
-          logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-        }
-
-        if (logLine.length > 80) {
-          logLine = logLine.slice(0, 79) + "…";
-        }
-
-        console.log(logLine);
+  
+  // Users endpoint
+  app.get('/api/users', async (req, res) => {
+    try {
+      const users = await db.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      res.status(500).json({ message: 'Failed to fetch users' });
+    }
+  });
+  
+  // Update user status
+  app.put('/api/users/:id/status', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      
+      const success = await db.updateUserStatus(id, status);
+      if (success) {
+        res.json({ message: 'User status updated successfully' });
+      } else {
+        res.status(500).json({ message: 'Failed to update user status' });
       }
-    });
-
-    next();
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      res.status(500).json({ message: 'Failed to update user status' });
+    }
   });
-
-  registerRoutes(app);
+  
+  // Get user transactions
+  app.get('/api/users/:id/transactions', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const transactions = await db.getUserTransactions(id);
+      res.json(transactions);
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      res.status(500).json({ message: 'Failed to fetch transactions' });
+    }
+  });
+  
+  // Get pending deposits/withdrawals
+  app.get('/api/deposits-withdrawals/pending', async (req, res) => {
+    try {
+      const pending = await db.getPendingDepositsWithdrawals();
+      res.json(pending);
+    } catch (error) {
+      console.error('Error fetching pending deposits/withdrawals:', error);
+      res.status(500).json({ message: 'Failed to fetch pending deposits/withdrawals' });
+    }
+  });
+  
+  // Update deposit/withdrawal status
+  app.put('/api/deposits-withdrawals/:id/status', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status, processedBy, rejectionReason } = req.body;
+      
+      const success = await db.updateDepositWithdrawalStatus(id, status, processedBy, rejectionReason);
+      if (success) {
+        res.json({ message: 'Deposit/withdrawal status updated successfully' });
+      } else {
+        res.status(500).json({ message: 'Failed to update deposit/withdrawal status' });
+      }
+    } catch (error) {
+      console.error('Error updating deposit/withdrawal status:', error);
+      res.status(500).json({ message: 'Failed to update deposit/withdrawal status' });
+    }
+  });
+  
   return app;
 }
 
-// Only start server if this file is run directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+// For direct server execution
+if (require.main === module) {
   const app = createServer();
-  const server = setupVite(app, serveStatic);
-
-  const PORT = process.env.PORT || 8080;
-  server.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on port ${PORT}`);
+  const port = process.env.PORT || 3001;
+  
+  app.listen(port, '0.0.0.0', () => {
+    console.log(`🚀 Server running on http://0.0.0.0:${port}`);
   });
 }
