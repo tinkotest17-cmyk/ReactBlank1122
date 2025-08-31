@@ -43,7 +43,7 @@ export default function Welcome() {
     {
       icon: Globe,
       title: "Global Markets",
-      description: "Access to international markets around the clock"
+      description: "Access to international markets around the clocks"
     }
   ];
 
