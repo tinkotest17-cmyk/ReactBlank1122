@@ -230,7 +230,7 @@ export default function Auth() {
                   </Button>
                   
                   <div className="text-center text-sm text-slate-300">
-                    New accounts start with $10,000 total balance and $5,000 trading balance
+                    New accounts start with $0.00 total balance and $0.00 trading balance
                   </div>
                 </form>
               </TabsContent>

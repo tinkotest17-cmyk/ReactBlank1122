@@ -135,14 +135,23 @@ export default function Admin() {
   };
 
   const handleSuspendUser = async (targetUser: User) => {
-    if (!user) return;
+    if (!user) {
+      toast.error('Admin not authenticated');
+      return;
+    }
     
-    const success = suspendUser(targetUser.id, user.id, user.email);
-    if (success) {
-      toast.success(`User ${targetUser.email} suspended successfully!`);
-      refreshData();
-    } else {
-      toast.error('Failed to suspend user');
+    try {
+      const success = suspendUser(targetUser.id, user.id, user.email);
+      if (success) {
+        toast.success(`User ${targetUser.email} suspended successfully!`);
+        setRefreshKey(prev => prev + 1); // Force refresh
+        refreshData();
+      } else {
+        toast.error('Failed to suspend user');
+      }
+    } catch (error) {
+      console.error('Error suspending user:', error);
+      toast.error('An error occurred while suspending user');
     }
   };
 
@@ -440,7 +449,7 @@ export default function Admin() {
                           Adjust Balance
                         </Button>
                       </DialogTrigger>
-                      <DialogContent>
+                      <DialogContent onInteractOutside={(e) => e.preventDefault()}>
                         <DialogHeader>
                           <DialogTitle>Adjust Balance for {selectedUser?.email}</DialogTitle>
                         </DialogHeader>

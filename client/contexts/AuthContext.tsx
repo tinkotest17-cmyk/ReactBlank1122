@@ -129,8 +129,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       username: email.split('@')[0],
       role: 'user',
-      totalBalance: 10000, // Starting balance
-      tradingBalance: 5000, // Starting trading balance
+      totalBalance: 0, // Starting balance
+      tradingBalance: 0, // Starting trading balance
       createdAt: new Date(),
       status: 'active'
     };

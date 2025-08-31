@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ReactBlank1122</string>
+    <string name="title_activity_main">ReactBlank1122</string>
+    <string name="package_name">com.reactblank1122.app</string>
+    <string name="custom_url_scheme">com.reactblank1122.app</string>
+</resources>

@@ -21,6 +21,9 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/cli": "^7.4.3",
+    "@capacitor/core": "^7.4.3",
     "@types/memoizee": "^0.4.12",
     "@types/pg": "^8.15.5",
     "dotenv": "^17.2.1",
